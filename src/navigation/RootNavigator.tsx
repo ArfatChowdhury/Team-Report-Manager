@@ -5,7 +5,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../store';
 
 import AuthNavigator from './AuthNavigator';
-import AdminDashboard from '../screens/admin/AdminDashboard';
+import AdminNavigator from './AdminNavigator';
 import LeaderDashboard from '../screens/leader/LeaderDashboard';
 import MemberDashboard from '../screens/member/MemberDashboard';
 
@@ -24,7 +24,7 @@ const RootNavigator = () => {
           // 2. If logged in, show the correct dashboard based on role
           <>
             {user?.role === 'admin' && (
-              <Stack.Screen name="AdminMain" component={AdminDashboard} />
+              <Stack.Screen name="AdminMain" component={AdminNavigator} />
             )}
             {user?.role === 'leader' && (
               <Stack.Screen name="LeaderMain" component={LeaderDashboard} />

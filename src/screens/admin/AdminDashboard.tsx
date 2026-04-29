@@ -6,8 +6,9 @@ import {
   SafeAreaView, 
   ScrollView, 
   TouchableOpacity,
-  RefreshControl
+  RefreshControl 
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { logOut } from '../../store/slices/authSlice';
@@ -24,6 +25,7 @@ const AdminDashboard = () => {
   
   const { user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
+  const navigation = useNavigation<any>();
 
   const fetchData = async () => {
     try {
@@ -86,7 +88,10 @@ const AdminDashboard = () => {
 
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         
-        <TouchableOpacity style={styles.actionItem}>
+        <TouchableOpacity 
+          style={styles.actionItem}
+          onPress={() => navigation.navigate('ManageUsers')}
+        >
           <Card style={styles.actionCard}>
             <View>
               <Text style={styles.actionTitle}>Manage Team</Text>
