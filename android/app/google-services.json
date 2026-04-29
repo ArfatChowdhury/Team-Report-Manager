@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "150769713388",
+    "project_id": "team-manager-report",
+    "storage_bucket": "team-manager-report.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:150769713388:android:06bb381b92380eb1d525c9",
+        "android_client_info": {
+          "package_name": "com.teamreportm"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAW9khNzqw-hWOTqSCpdwwYmCRJ8OldGfA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

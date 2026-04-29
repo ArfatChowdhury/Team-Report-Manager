@@ -1,34 +1,105 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
+import React, { useState } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  SafeAreaView, 
+  Alert, 
+  KeyboardAvoidingView, 
+  Platform,
+  ScrollView
+} from 'react-native';
+import { useDispatch } from 'react-redux';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
+import { loginWithFirebase } from '../../api/authApi';
+import { setCredentials, setError, setLoading } from '../../store/slices/authSlice';
 
 const LoginScreen = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const dispatch = useDispatch();
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    setIsSubmitting(true);
+    dispatch(setLoading(true));
+
+    try {
+      const data = await loginWithFirebase(email, password);
+      
+      // Store in Redux (this will trigger RootNavigator to switch to the dashboard)
+      dispatch(setCredentials({
+        user: data.user,
+        token: data.token
+      }));
+      
+    } catch (error: any) {
+      console.error(error);
+      let message = 'An error occurred during login';
+      if (error.code === 'auth/user-not-found') message = 'No user found with this email';
+      if (error.code === 'auth/wrong-password') message = 'Incorrect password';
+      
+      Alert.alert('Login Failed', message);
+      dispatch(setError(message));
+    } finally {
+      setIsSubmitting(false);
+      dispatch(setLoading(false));
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Welcome Back</Text>
-        <Text style={styles.subtitle}>Sign in to manage your team reports</Text>
-        
-        <Input 
-          label="Email Address"
-          placeholder="Enter your email"
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
-        
-        <Input 
-          label="Password"
-          placeholder="Enter your password"
-          secureTextEntry
-        />
-        
-        <Button 
-          title="Sign In" 
-          onPress={() => console.log('Login pressed')} 
-          style={styles.button}
-        />
-      </View>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.flex}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Team Manager</Text>
+            <Text style={styles.subtitle}>Sign in to start reporting</Text>
+          </View>
+          
+          <View style={styles.form}>
+            <Input 
+              label="Email Address"
+              placeholder="admin@teamreport.com"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoComplete="email"
+            />
+            
+            <Input 
+              label="Password"
+              placeholder="••••••••"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+            />
+            
+            <Button 
+              title="Sign In" 
+              onPress={handleLogin} 
+              loading={isSubmitting}
+              style={styles.button}
+            />
+
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>
+                Need help? Contact your administrator
+              </Text>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -38,24 +109,40 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
-  content: {
+  flex: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
     padding: 24,
     justifyContent: 'center',
   },
+  header: {
+    marginBottom: 40,
+  },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '800',
-    color: '#1E293B',
+    color: '#10B981', // Emerald Primary
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
     color: '#64748B',
-    marginBottom: 32,
+  },
+  form: {
+    width: '100%',
   },
   button: {
-    marginTop: 16,
+    marginTop: 24,
+  },
+  footer: {
+    marginTop: 32,
+    alignItems: 'center',
+  },
+  footerText: {
+    fontSize: 14,
+    color: '#94A3B8',
   },
 });
 
