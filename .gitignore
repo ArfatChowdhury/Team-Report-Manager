@@ -76,3 +76,5 @@ yarn-error.log
 
 #folder ignore (per in root)
 /per/
+
+.env    
