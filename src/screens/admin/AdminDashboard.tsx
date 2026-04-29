@@ -57,61 +57,65 @@ const AdminDashboard = () => {
     dispatch(logOut());
   };
 
-  if (loading) return <Loader visible={true} />;
+  // Removed early return to fix Hook order issues
+
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      >
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>Hello, Admin</Text>
-            <Text style={styles.name}>{user?.name}</Text>
-          </View>
-          <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
-            <Text style={styles.logoutText}>Logout</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.statsGrid}>
-          <Card style={styles.statCard}>
-            <Text style={styles.statNumber}>{stats.users}</Text>
-            <Text style={styles.statLabel}>Total Users</Text>
-          </Card>
-          <Card style={styles.statCard}>
-            <Text style={styles.statNumber}>{stats.projects}</Text>
-            <Text style={styles.statLabel}>Projects</Text>
-          </Card>
-        </View>
-
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        
-        <TouchableOpacity 
-          style={styles.actionItem}
-          onPress={() => navigation.navigate('ManageUsers')}
+      <Loader visible={loading} />
+      {!loading && (
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
-          <Card style={styles.actionCard}>
+          <View style={styles.header}>
             <View>
-              <Text style={styles.actionTitle}>Manage Team</Text>
-              <Text style={styles.actionDesc}>Add leaders or members</Text>
+              <Text style={styles.greeting}>Hello, Admin</Text>
+              <Text style={styles.name}>{user?.name}</Text>
             </View>
-            <Badge label="Manage" status="in-progress" />
-          </Card>
-        </TouchableOpacity>
+            <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
+              <Text style={styles.logoutText}>Logout</Text>
+            </TouchableOpacity>
+          </View>
 
-        <TouchableOpacity style={styles.actionItem}>
-          <Card style={styles.actionCard}>
-            <View>
-              <Text style={styles.actionTitle}>Global Reports</Text>
-              <Text style={styles.actionDesc}>View all daily activity</Text>
-            </View>
-            <Badge label="View" status="done" />
-          </Card>
-        </TouchableOpacity>
+          <View style={styles.statsGrid}>
+            <Card style={styles.statCard}>
+              <Text style={styles.statNumber}>{stats.users}</Text>
+              <Text style={styles.statLabel}>Total Users</Text>
+            </Card>
+            <Card style={styles.statCard}>
+              <Text style={styles.statNumber}>{stats.projects}</Text>
+              <Text style={styles.statLabel}>Projects</Text>
+            </Card>
+          </View>
 
-      </ScrollView>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          
+          <TouchableOpacity 
+            style={styles.actionItem}
+            onPress={() => navigation.navigate('ManageUsers')}
+          >
+            <Card style={styles.actionCard}>
+              <View>
+                <Text style={styles.actionTitle}>Manage Team</Text>
+                <Text style={styles.actionDesc}>Add leaders or members</Text>
+              </View>
+              <Badge label="Manage" status="in-progress" />
+            </Card>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.actionItem}>
+            <Card style={styles.actionCard}>
+              <View>
+                <Text style={styles.actionTitle}>Global Reports</Text>
+                <Text style={styles.actionDesc}>View all daily activity</Text>
+              </View>
+              <Badge label="View" status="done" />
+            </Card>
+          </TouchableOpacity>
+
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 };

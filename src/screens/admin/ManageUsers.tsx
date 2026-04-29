@@ -8,12 +8,14 @@ import {
   Alert,
   RefreshControl 
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
 import { getAllUsers, deleteUser } from '../../api/usersApi';
 
 const ManageUsers = () => {
+  const navigation = useNavigation<any>();
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -100,7 +102,10 @@ const ManageUsers = () => {
         }
       />
       
-      <TouchableOpacity style={styles.fab}>
+      <TouchableOpacity 
+        style={styles.fab}
+        onPress={() => navigation.navigate('CreateUser')}
+      >
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
     </View>

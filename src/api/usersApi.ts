@@ -14,3 +14,8 @@ export const deleteUser = async (userId: string) => {
   const response = await client.delete(`/users/${userId}`);
   return response.data;
 };
+
+export const getLeaders = async () => {
+  const response = await client.get('/users?role=leader');
+  return response.data;
+};
