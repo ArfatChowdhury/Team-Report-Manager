@@ -47,7 +47,15 @@ const CreateUser = () => {
 
     setLoading(true);
     try {
-      await createUser(formData);
+      // Prepare payload: Only send assignedLeader if role is member and it's not empty
+      const payload = {
+        ...formData,
+        assignedLeader: formData.role === 'member' && formData.assignedLeader !== '' 
+          ? formData.assignedLeader 
+          : undefined
+      };
+
+      await createUser(payload);
       Alert.alert('Success', 'User created successfully', [
         { text: 'OK', onPress: () => navigation.goBack() }
       ]);

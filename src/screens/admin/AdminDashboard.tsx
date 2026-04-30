@@ -104,6 +104,19 @@ const AdminDashboard = () => {
             </Card>
           </TouchableOpacity>
 
+          <TouchableOpacity 
+            style={styles.actionItem}
+            onPress={() => navigation.navigate('ManageProjects')}
+          >
+            <Card style={styles.actionCard}>
+              <View>
+                <Text style={styles.actionTitle}>Manage Projects</Text>
+                <Text style={styles.actionDesc}>Create and assign projects</Text>
+              </View>
+              <Badge label="Active" status="in-progress" />
+            </Card>
+          </TouchableOpacity>
+
           <TouchableOpacity style={styles.actionItem}>
             <Card style={styles.actionCard}>
               <View>
