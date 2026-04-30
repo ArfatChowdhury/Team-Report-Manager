@@ -1,7 +1,7 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import LeaderDashboard from '../screens/leader/LeaderDashboard';
-// import ProjectTasks from '../screens/leader/ProjectTasks';
+import ProjectTasks from '../screens/leader/ProjectTasks';
 // import CreateTask from '../screens/leader/CreateTask';
 
 const Stack = createStackNavigator();
@@ -20,7 +20,11 @@ const LeaderNavigator = () => {
         component={LeaderDashboard} 
         options={{ title: 'My Projects', headerShown: false }}
       />
-      {/* Screens below will be added as we build them */}
+      <Stack.Screen 
+        name="ProjectTasks" 
+        component={ProjectTasks} 
+        options={{ title: 'Tasks', headerShown: false }}
+      />
     </Stack.Navigator>
   );
 };
