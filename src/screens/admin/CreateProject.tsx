@@ -23,7 +23,8 @@ const CreateProject = () => {
   const [formData, setFormData] = useState({
     title: '', // Backend expects 'title'
     description: '',
-    leader: ''
+    leader: '',
+    deadline: ''
   });
 
   useEffect(() => {
@@ -77,6 +78,13 @@ const CreateProject = () => {
           style={{ height: 100 }}
           value={formData.description}
           onChangeText={(v) => setFormData({...formData, description: v})}
+        />
+
+        <Text style={styles.label}>Project Deadline</Text>
+        <Input 
+          placeholder="YYYY-MM-DD (e.g. 2026-05-01)"
+          value={formData.deadline}
+          onChangeText={(v) => setFormData({...formData, deadline: v})}
         />
 
         <Text style={styles.label}>Assign a Leader</Text>

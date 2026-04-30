@@ -47,16 +47,18 @@ const ProjectTasks = () => {
   };
 
   const renderTaskItem = ({ item }: { item: any }) => (
-    <Card style={styles.taskCard}>
-      <View style={styles.taskInfo}>
-        <Text style={styles.taskTitle}>{item.title}</Text>
-        <Text style={styles.assignee}>Assigned to: {item.assignedTo?.name || 'Unassigned'}</Text>
-      </View>
-      <Badge 
-        label={item.status} 
-        status={item.status === 'done' ? 'done' : item.status === 'in-progress' ? 'in-progress' : 'todo'} 
-      />
-    </Card>
+    <TouchableOpacity onPress={() => navigation.navigate('TaskDetails', { task: item })}>
+      <Card style={styles.taskCard}>
+        <View style={styles.taskInfo}>
+          <Text style={styles.taskTitle}>{item.title}</Text>
+          <Text style={styles.assignee}>Assigned to: {item.assignedTo?.name || 'Unassigned'}</Text>
+        </View>
+        <Badge 
+          label={item.status} 
+          status={item.status === 'done' ? 'done' : item.status === 'in-progress' ? 'in-progress' : 'todo'} 
+        />
+      </Card>
+    </TouchableOpacity>
   );
 
   return (

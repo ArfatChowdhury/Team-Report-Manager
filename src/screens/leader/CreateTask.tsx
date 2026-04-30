@@ -28,7 +28,8 @@ const CreateTask = () => {
     description: '',
     project: project._id,
     assignedTo: '',
-    priority: 'medium'
+    priority: 'medium',
+    dueDate: ''
   });
 
   useEffect(() => {
@@ -107,6 +108,13 @@ const CreateTask = () => {
             </TouchableOpacity>
           ))}
         </View>
+
+        <Text style={styles.label}>Task Deadline</Text>
+        <Input 
+          placeholder="YYYY-MM-DD (e.g. 2026-05-01)"
+          value={formData.dueDate}
+          onChangeText={(v) => setFormData({...formData, dueDate: v})}
+        />
 
         <Text style={styles.label}>Assign To Team Member</Text>
         <View style={styles.memberList}>

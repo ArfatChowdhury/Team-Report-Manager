@@ -10,7 +10,7 @@ import {
   Alert
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { RootState } from '../../store';
 import { logOut } from '../../store/slices/authSlice';
 import Card from '../../components/common/Card';
@@ -26,6 +26,7 @@ const MemberDashboard = () => {
   
   const { user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
+  const navigation = useNavigation<any>();
 
   const fetchTasks = async () => {
     try {
@@ -91,8 +92,9 @@ const MemberDashboard = () => {
 
   const renderTaskItem = ({ item }: { item: any }) => (
     <TouchableOpacity 
-      onPress={() => handleStatusUpdate(item._id, item.status)}
-      disabled={item.status === 'done'}
+      onPress={() => navigation.navigate('TaskDetails', { task: item })}
+      onLongPress={() => handleStatusUpdate(item._id, item.status)}
+      delayLongPress={200}
     >
       <Card style={[styles.taskCard, item.status === 'done' && styles.taskDone]}>
         <View style={styles.taskInfo}>
@@ -105,9 +107,7 @@ const MemberDashboard = () => {
             label={item.status} 
             status={item.status === 'done' ? 'done' : item.status === 'in-progress' ? 'in-progress' : 'todo'} 
           />
-          {item.status !== 'done' && (
-            <Text style={styles.tapHint}>Tap to update</Text>
-          )}
+          <Text style={styles.tapHint}>Long press to update</Text>
         </View>
       </Card>
     </TouchableOpacity>

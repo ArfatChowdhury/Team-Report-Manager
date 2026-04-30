@@ -15,11 +15,13 @@ import { logOut } from '../../store/slices/authSlice';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
+import client from '../../api/client';
 import { getAllUsers } from '../../api/usersApi';
 import { getAllProjects } from '../../api/projectsApi';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({ users: 0, projects: 0, tasks: 0 });
+  const [dailyRecap, setDailyRecap] = useState({ totalCompleted: 0, totalMinutes: 0 });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
@@ -31,11 +33,14 @@ const AdminDashboard = () => {
     try {
       const users = await getAllUsers();
       const projects = await getAllProjects();
+      const summary = await client.get('/reports/summary');
+      
       setStats({
         users: users.length,
         projects: projects.length,
-        tasks: 0 // Will implement task stats later
+        tasks: summary.data.totalCompleted
       });
+      setDailyRecap(summary.data);
     } catch (error) {
       console.error('Error fetching admin stats:', error);
     } finally {
@@ -117,15 +122,20 @@ const AdminDashboard = () => {
             </Card>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionItem}>
-            <Card style={styles.actionCard}>
-              <View>
-                <Text style={styles.actionTitle}>Global Reports</Text>
-                <Text style={styles.actionDesc}>View all daily activity</Text>
+          <Text style={styles.sectionTitle}>Today's Achievement</Text>
+          <Card style={styles.recapCard}>
+            <View style={styles.recapRow}>
+              <View style={styles.recapItem}>
+                <Text style={styles.recapVal}>{dailyRecap.totalCompleted}</Text>
+                <Text style={styles.recapLab}>Tasks Done</Text>
               </View>
-              <Badge label="View" status="done" />
-            </Card>
-          </TouchableOpacity>
+              <View style={styles.recapDivider} />
+              <View style={styles.recapItem}>
+                <Text style={styles.recapVal}>{dailyRecap.totalMinutes}m</Text>
+                <Text style={styles.recapLab}>Time Logged</Text>
+              </View>
+            </View>
+          </Card>
 
         </ScrollView>
       )}
@@ -209,6 +219,34 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#64748B',
     marginTop: 2,
+  },
+  recapCard: {
+    backgroundColor: '#6366F1',
+    padding: 20,
+    marginBottom: 20,
+  },
+  recapRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+  },
+  recapItem: {
+    alignItems: 'center',
+  },
+  recapVal: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  recapLab: {
+    fontSize: 12,
+    color: '#E0E7FF',
+    marginTop: 4,
+  },
+  recapDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: 'rgba(255,255,255,0.2)',
   },
 });
 

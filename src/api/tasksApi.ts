@@ -14,3 +14,8 @@ export const updateTaskStatus = async (taskId: string, status: string) => {
   const response = await client.put(`/tasks/${taskId}`, { status });
   return response.data;
 };
+
+export const carryOverTask = async (taskId: string) => {
+  const response = await client.post(`/tasks/${taskId}/carryover`);
+  return response.data;
+};
