@@ -5,6 +5,7 @@ import ManageUsers from '../screens/admin/ManageUsers';
 import CreateUser from '../screens/admin/CreateUser';
 import ManageProjects from '../screens/admin/ManageProjects';
 import CreateProject from '../screens/admin/CreateProject';
+import EditProject from '../screens/admin/EditProject';
 
 const Stack = createStackNavigator();
 
@@ -41,6 +42,11 @@ const AdminNavigator = () => {
         name="CreateProject" 
         component={CreateProject} 
         options={{ title: 'New Project' }}
+      />
+      <Stack.Screen 
+        name="EditProject" 
+        component={EditProject} 
+        options={{ title: 'Edit Project' }}
       />
     </Stack.Navigator>
   );
