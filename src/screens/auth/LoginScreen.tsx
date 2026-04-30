@@ -9,9 +9,10 @@ import {
   Platform,
   ScrollView
 } from 'react-native';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
+import WaterRipple from '../../components/common/WaterRipple';
 import { loginWithFirebase } from '../../api/authApi';
 import { setCredentials, setError, setLoading } from '../../store/slices/authSlice';
 
@@ -60,6 +61,7 @@ const LoginScreen = () => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flex}
       >
+        <WaterRipple />
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.header}>
             <Text style={styles.title}>Team Manager</Text>
@@ -107,7 +109,7 @@ const LoginScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
   },
   flex: {
     flex: 1,

@@ -3,8 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store';
-import { auth } from '../config/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import auth from '@react-native-firebase/auth';
 import { setCredentials } from '../store/slices/authSlice';
 import client from '../api/client';
 import Loader from '../components/common/Loader';
@@ -22,7 +21,7 @@ const RootNavigator = () => {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    const unsubscribe = auth().onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
         try {
           // If we have a firebase user but no redux state, restore it

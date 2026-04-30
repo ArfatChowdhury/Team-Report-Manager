@@ -24,6 +24,8 @@ const TaskDetails = () => {
   const { task } = route.params;
   const { user } = useSelector((state: RootState) => state.auth);
   const [aiLoading, setAiLoading] = useState(false);
+  const [currentTask, setCurrentTask] = useState(task);
+  const [statusLoading, setStatusLoading] = useState(false);
 
   const handleCarryOver = async () => {
     Alert.alert(
@@ -35,7 +37,7 @@ const TaskDetails = () => {
           text: 'Yes, Carry Over', 
           onPress: async () => {
             try {
-              await carryOverTask(task._id);
+              await carryOverTask(currentTask._id);
               Alert.alert('Success', 'Task carried over and locked');
               navigation.goBack();
             } catch (err) {
@@ -45,6 +47,18 @@ const TaskDetails = () => {
         }
       ]
     );
+  };
+
+  const handleStatusChange = async (newStatus: string) => {
+    try {
+      setStatusLoading(true);
+      const res = await client.patch(`/tasks/${currentTask._id}/status`, { status: newStatus });
+      setCurrentTask(res.data);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update status');
+    } finally {
+      setStatusLoading(false);
+    }
   };
 
   const handleAIImprove = async () => {
@@ -66,10 +80,11 @@ const TaskDetails = () => {
           { 
             text: 'Apply', 
             onPress: async () => {
-              await client.put(`/tasks/${task._id}`, {
+              await client.put(`/tasks/${currentTask._id}`, {
                 title: improved.title,
                 description: improved.description
               });
+              setCurrentTask({ ...currentTask, title: improved.title, description: improved.description });
               Alert.alert('Success', 'Improvements applied!');
               navigation.goBack();
             }
@@ -96,12 +111,12 @@ const TaskDetails = () => {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.projectSection}>
           <Text style={styles.projectLabel}>Project</Text>
-          <Text style={styles.projectTitle}>{task.project?.title || 'General'}</Text>
+          <Text style={styles.projectTitle}>{currentTask.project?.title || 'General'}</Text>
         </View>
 
         <View style={styles.titleRow}>
-          <Text style={styles.taskTitle}>{task.title}</Text>
-          {(user?.role === 'admin' || user?.role === 'leader') && !task.isLocked && (
+          <Text style={styles.taskTitle}>{currentTask.title}</Text>
+          {(user?.role === 'admin' || user?.role === 'leader') && !currentTask.isLocked && (
             <TouchableOpacity onPress={handleAIImprove} disabled={aiLoading}>
               {aiLoading ? (
                 <ActivityIndicator size="small" color="#6366F1" />
@@ -114,50 +129,71 @@ const TaskDetails = () => {
         
         <View style={styles.badgeRow}>
           <Badge 
-            label={task.status} 
-            status={task.status === 'done' ? 'done' : task.status === 'in-progress' ? 'in-progress' : 'todo'} 
+            label={currentTask.status} 
+            status={currentTask.status === 'done' ? 'done' : currentTask.status === 'in-progress' ? 'in-progress' : 'todo'} 
           />
           <View style={{ width: 10 }} />
           <Badge 
-            label={task.priority || 'Medium'} 
-            status={task.priority === 'high' ? 'in-progress' : 'todo'} 
+            label={currentTask.priority || 'Medium'} 
+            status={currentTask.priority === 'high' ? 'in-progress' : 'todo'} 
           />
         </View>
 
         <Card style={styles.descCard}>
           <Text style={styles.sectionLabel}>Description</Text>
           <Text style={styles.description}>
-            {task.description || 'No description provided for this task.'}
+            {currentTask.description || 'No description provided for this task.'}
           </Text>
         </Card>
 
         <View style={styles.infoGrid}>
           <View style={styles.infoItem}>
             <Text style={styles.infoLabel}>Assigned To</Text>
-            <Text style={styles.infoValue}>{task.assignedTo?.name || 'Unassigned'}</Text>
+            <Text style={styles.infoValue}>{currentTask.assignedTo?.name || 'Unassigned'}</Text>
           </View>
           <View style={styles.infoItem}>
             <Text style={styles.infoLabel}>Assigned By</Text>
-            <Text style={styles.infoValue}>{task.assignedBy?.name || 'Manager'}</Text>
+            <Text style={styles.infoValue}>{currentTask.assignedBy?.name || 'Manager'}</Text>
           </View>
         </View>
 
-        {task.startedAt && (
+        {currentTask.startedAt && (
           <View style={styles.timeSection}>
-            <Text style={styles.infoLabel}>Timeline</Text>
-            <Text style={styles.timeValue}>Started: {new Date(task.startedAt).toLocaleDateString()}</Text>
-            {task.completedAt && (
-              <Text style={styles.timeValue}>Completed: {new Date(task.completedAt).toLocaleDateString()}</Text>
+            <Text style={styles.infoLabel}>Timeline & Tracking</Text>
+            <Text style={styles.timeValue}>Started: {new Date(currentTask.startedAt).toLocaleDateString()}</Text>
+            {currentTask.completedAt && (
+              <Text style={styles.timeValue}>Completed: {new Date(currentTask.completedAt).toLocaleDateString()}</Text>
             )}
-            {task.dueDate && (
+            {currentTask.timeTracked > 0 && (
+              <Text style={styles.timeTrackedValue}>⏱️ Time Tracked: {currentTask.timeTracked} mins</Text>
+            )}
+            {currentTask.dueDate && (
               <Text style={[styles.timeValue, { color: '#EF4444', fontWeight: '700' }]}>
-                Deadline: {new Date(task.dueDate).toLocaleDateString()}
+                Deadline: {new Date(currentTask.dueDate).toLocaleDateString()}
               </Text>
             )}
           </View>
         )}
 
-        {(user?.role === 'admin' || user?.role === 'leader') && task.status !== 'done' && !task.isLocked && (
+        {!currentTask.isLocked && (user?.role === 'member' ? user._id === currentTask.assignedTo?._id : true) && (
+          <View style={styles.actionButtons}>
+            {statusLoading ? <ActivityIndicator size="large" color="#6366F1" /> : (
+              <>
+                {(currentTask.status === 'todo' || currentTask.status === 'pause') && (
+                  <Button title="Start Task" onPress={() => handleStatusChange('in-progress')} style={styles.startBtn} />
+                )}
+                {currentTask.status === 'in-progress' && (
+                  <>
+                    <Button title="Pause" onPress={() => handleStatusChange('pause')} style={styles.pauseBtn} />
+                    <Button title="Mark as Done" onPress={() => handleStatusChange('done')} style={styles.doneBtn} />
+                  </>
+                )}
+              </>
+            )}
+          </View>
+        )}
+
+        {(user?.role === 'admin' || user?.role === 'leader') && currentTask.status !== 'done' && !currentTask.isLocked && (
           <Button 
             title="Carry Over to Tomorrow" 
             onPress={handleCarryOver}
@@ -192,7 +228,12 @@ const styles = StyleSheet.create({
   infoValue: { fontSize: 15, color: '#1E293B', fontWeight: '600' },
   timeSection: { borderTopWidth: 1, borderTopColor: '#F1F5F9', paddingTop: 16, marginBottom: 20 },
   timeValue: { fontSize: 14, color: '#64748B', marginTop: 4 },
-  carryOverBtn: { marginTop: 20, backgroundColor: '#6366F1' },
+  timeTrackedValue: { fontSize: 15, color: '#10B981', marginTop: 8, fontWeight: '700' },
+  actionButtons: { marginTop: 16, gap: 12 },
+  startBtn: { backgroundColor: '#3B82F6' },
+  pauseBtn: { backgroundColor: '#F59E0B' },
+  doneBtn: { backgroundColor: '#10B981' },
+  carryOverBtn: { marginTop: 24, backgroundColor: '#6366F1' },
 });
 
 export default TaskDetails;

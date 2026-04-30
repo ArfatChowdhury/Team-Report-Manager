@@ -6,7 +6,9 @@ import {
   FlatList, 
   TouchableOpacity, 
   RefreshControl,
-  SafeAreaView
+  SafeAreaView,
+  Modal,
+  TextInput
 } from 'react-native';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import Card from '../../components/common/Card';
@@ -25,6 +27,8 @@ const ProjectTasks = () => {
   const [loading, setLoading] = useState(true);
   const [aiLoading, setAiLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [reviewModalVisible, setReviewModalVisible] = useState(false);
+  const [suggestedTasks, setSuggestedTasks] = useState<{ id: string; title: string }[]>([]);
 
   const fetchTasks = async () => {
     try {
@@ -57,43 +61,48 @@ const ProjectTasks = () => {
         description: project.description
       });
       
-      const suggestedTasks = response.data;
-      
-      Alert.alert(
-        'AI Suggestions',
-        `Llama-3 suggested ${suggestedTasks.length} tasks. Should I add them to your project?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Add All', 
-            onPress: async () => {
-              try {
-                setLoading(true);
-                // Create each task
-                const promises = suggestedTasks.map((tTitle: string) => 
-                  client.post('/tasks', {
-                    title: tTitle,
-                    project: project._id,
-                    assignedTo: null, // Admin/Leader can assign later
-                    priority: 'medium'
-                  })
-                );
-                await Promise.all(promises);
-                fetchTasks();
-              } catch (e) {
-                Alert.alert('Error', 'Failed to add AI tasks');
-              } finally {
-                setLoading(false);
-              }
-            } 
-          }
-        ]
-      );
+      const tasks = response.data;
+      const editableTasks = tasks.map((t: string, i: number) => ({ id: i.toString(), title: t }));
+      setSuggestedTasks(editableTasks);
+      setReviewModalVisible(true);
     } catch (error) {
       Alert.alert('AI Error', 'Make sure GROQ_API_KEY is in your backend .env');
     } finally {
       setAiLoading(false);
     }
+  };
+
+  const handleSaveAITasks = async () => {
+    try {
+      setLoading(true);
+      setReviewModalVisible(false);
+      
+      const promises = suggestedTasks.map(task => {
+        if (!task.title.trim()) return null;
+        return client.post('/tasks', {
+          title: task.title,
+          project: project._id,
+          priority: 'medium'
+          // omitted assignedTo so it remains optional/unassigned
+        });
+      }).filter(Boolean);
+
+      await Promise.all(promises);
+      fetchTasks();
+      Alert.alert('Success', `${promises.length} tasks added successfully!`);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to add AI tasks');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateSuggestedTask = (id: string, newTitle: string) => {
+    setSuggestedTasks(prev => prev.map(t => t.id === id ? { ...t, title: newTitle } : t));
+  };
+
+  const removeSuggestedTask = (id: string) => {
+    setSuggestedTasks(prev => prev.filter(t => t.id !== id));
   };
 
   const renderTaskItem = ({ item }: { item: any }) => (
@@ -154,6 +163,47 @@ const ProjectTasks = () => {
       >
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
+
+      <Modal
+        visible={reviewModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Review AI Plan</Text>
+            <TouchableOpacity onPress={() => setReviewModalVisible(false)}>
+              <Text style={styles.modalCloseText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.modalSub}>Edit, remove, or refine tasks before saving.</Text>
+          
+          <FlatList
+            data={suggestedTasks}
+            keyExtractor={item => item.id}
+            contentContainerStyle={styles.modalList}
+            renderItem={({ item }) => (
+              <View style={styles.editTaskRow}>
+                <TextInput
+                  style={styles.editTaskInput}
+                  value={item.title}
+                  onChangeText={(text) => updateSuggestedTask(item.id, text)}
+                  multiline
+                />
+                <TouchableOpacity onPress={() => removeSuggestedTask(item.id)} style={styles.removeBtn}>
+                  <Text style={styles.removeText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          />
+
+          <View style={styles.modalFooter}>
+            <TouchableOpacity style={styles.saveBtn} onPress={handleSaveAITasks}>
+              <Text style={styles.saveBtnText}>Save {suggestedTasks.length} Tasks</Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -192,6 +242,19 @@ const styles = StyleSheet.create({
   emptyText: { color: '#94A3B8', fontSize: 15 },
   fab: { position: 'absolute', bottom: 24, right: 24, width: 56, height: 56, borderRadius: 28, backgroundColor: '#6366F1', justifyContent: 'center', alignItems: 'center', elevation: 5 },
   fabText: { fontSize: 32, color: '#FFFFFF', fontWeight: '300' },
+  modalContainer: { flex: 1, backgroundColor: '#F8FAFC' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
+  modalTitle: { fontSize: 20, fontWeight: '700', color: '#1E293B' },
+  modalCloseText: { fontSize: 16, color: '#EF4444', fontWeight: '600' },
+  modalSub: { padding: 16, color: '#64748B', fontSize: 14 },
+  modalList: { paddingHorizontal: 16, paddingBottom: 100 },
+  editTaskRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, backgroundColor: '#FFFFFF', borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0', overflow: 'hidden' },
+  editTaskInput: { flex: 1, padding: 12, fontSize: 15, color: '#1E293B', minHeight: 48 },
+  removeBtn: { padding: 16, backgroundColor: '#FEF2F2', justifyContent: 'center', alignItems: 'center' },
+  removeText: { color: '#EF4444', fontSize: 16, fontWeight: '700' },
+  modalFooter: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 20, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#E2E8F0' },
+  saveBtn: { backgroundColor: '#6366F1', padding: 16, borderRadius: 12, alignItems: 'center' },
+  saveBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
 });
 
 export default ProjectTasks;
