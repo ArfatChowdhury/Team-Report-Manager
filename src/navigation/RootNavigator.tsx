@@ -6,7 +6,7 @@ import { RootState } from '../store';
 
 import AuthNavigator from './AuthNavigator';
 import AdminNavigator from './AdminNavigator';
-import LeaderDashboard from '../screens/leader/LeaderDashboard';
+import LeaderNavigator from './LeaderNavigator';
 import MemberDashboard from '../screens/member/MemberDashboard';
 
 const Stack = createStackNavigator();
@@ -27,7 +27,7 @@ const RootNavigator = () => {
               <Stack.Screen name="AdminMain" component={AdminNavigator} />
             )}
             {user?.role === 'leader' && (
-              <Stack.Screen name="LeaderMain" component={LeaderDashboard} />
+              <Stack.Screen name="LeaderMain" component={LeaderNavigator} />
             )}
             {user?.role === 'member' && (
               <Stack.Screen name="MemberMain" component={MemberDashboard} />
