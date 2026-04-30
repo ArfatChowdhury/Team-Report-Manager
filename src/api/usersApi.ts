@@ -19,3 +19,8 @@ export const getLeaders = async () => {
   const response = await client.get('/users?role=leader');
   return response.data;
 };
+
+export const getMyMembers = async () => {
+  const response = await client.get('/users?role=member');
+  return response.data;
+};
