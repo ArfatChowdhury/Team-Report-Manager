@@ -17,6 +17,7 @@ import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
 import { getProjectTasks, updateTaskStatus } from '../../api/tasksApi';
+import { logout } from '../../api/authApi';
 import client from '../../api/client';
 
 const MemberDashboard = () => {
@@ -125,7 +126,13 @@ const MemberDashboard = () => {
           <Text style={styles.greeting}>Member Portal</Text>
           <Text style={styles.name}>{user?.name}</Text>
         </View>
-        <TouchableOpacity onPress={() => dispatch(logOut())} style={styles.logoutBtn}>
+        <TouchableOpacity 
+          onPress={async () => {
+            await logout();
+            dispatch(logOut());
+          }} 
+          style={styles.logoutBtn}
+        >
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
       </View>

@@ -6,6 +6,7 @@ import CreateUser from '../screens/admin/CreateUser';
 import ManageProjects from '../screens/admin/ManageProjects';
 import CreateProject from '../screens/admin/CreateProject';
 import EditProject from '../screens/admin/EditProject';
+import BulkTaskCreation from '../screens/admin/BulkTaskCreation';
 
 const Stack = createStackNavigator();
 
@@ -22,6 +23,11 @@ const AdminNavigator = () => {
         name="AdminDashboard" 
         component={AdminDashboard} 
         options={{ title: 'Admin Panel', headerShown: false }}
+      />
+      <Stack.Screen 
+        name="BulkTaskCreation" 
+        component={BulkTaskCreation} 
+        options={{ title: 'AI Bulk Tasks' }}
       />
       <Stack.Screen 
         name="ManageUsers" 

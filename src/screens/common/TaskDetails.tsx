@@ -64,29 +64,30 @@ const TaskDetails = () => {
   const handleAIImprove = async () => {
     try {
       setAiLoading(true);
-      const prompt = `Rewrite this task title and description to be more professional. 
-      Title: ${task.title}
-      Description: ${task.description}
-      Return ONLY a JSON object: { "title": "...", "description": "..." }`;
-
-      const response = await client.post('/ai/chat', { prompt });
-      const improved = response.data;
+      const res = await client.post('/ai/improve-task', {
+        title: currentTask.title,
+        description: currentTask.description
+      });
+      const improved = res.data;
       
       Alert.alert(
         'AI Writing Assistant',
-        `Title: ${improved.title}\n\nApply these improvements?`,
+        `Improved Title: ${improved.title}\n\nApply these improvements?`,
         [
           { text: 'Discard', style: 'cancel' },
           { 
             text: 'Apply', 
             onPress: async () => {
-              await client.put(`/tasks/${currentTask._id}`, {
-                title: improved.title,
-                description: improved.description
-              });
-              setCurrentTask({ ...currentTask, title: improved.title, description: improved.description });
-              Alert.alert('Success', 'Improvements applied!');
-              navigation.goBack();
+              try {
+                const updated = await client.patch(`/tasks/${currentTask._id}`, {
+                  title: improved.title,
+                  description: improved.description
+                });
+                setCurrentTask(updated.data);
+                Alert.alert('Success', 'Improvements applied!');
+              } catch (err) {
+                Alert.alert('Error', 'Failed to save improvements');
+              }
             }
           }
         ]

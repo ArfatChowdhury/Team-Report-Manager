@@ -72,6 +72,36 @@ const ProjectTasks = () => {
     }
   };
 
+  const handleEmailReport = async () => {
+    Alert.prompt(
+      'Send Email Report',
+      'Enter recipient email address:',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Send', 
+          onPress: async (email) => {
+            if (!email) return;
+            try {
+              setLoading(true);
+              await client.post('/reports/email-report', {
+                to: email,
+                projectTitle: project.title,
+                tasks: tasks // Sends current project tasks
+              });
+              Alert.alert('Success', 'AI Report sent successfully!');
+            } catch (err) {
+              Alert.alert('Error', 'Failed to send email report');
+            } finally {
+              setLoading(false);
+            }
+          }
+        }
+      ],
+      'plain-text'
+    );
+  };
+
   const handleSaveAITasks = async () => {
     try {
       setLoading(true);
@@ -135,6 +165,12 @@ const ProjectTasks = () => {
           <Text style={styles.headerLabel}>Project Tasks</Text>
           <Text style={styles.headerTitle}>{project.title}</Text>
         </View>
+        <TouchableOpacity 
+          style={[styles.aiBtn, { marginRight: 8, backgroundColor: '#F0FDF4', borderColor: '#22C55E' }]} 
+          onPress={handleEmailReport}
+        >
+          <Text style={[styles.aiBtnText, { color: '#16A34A' }]}>✉️ Report</Text>
+        </TouchableOpacity>
         <TouchableOpacity 
           style={styles.aiBtn} 
           onPress={handleAISuggest}

@@ -20,6 +20,7 @@ import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
 import client from '../../api/client';
 import { getAllProjects } from '../../api/projectsApi';
+import { logout } from '../../api/authApi';
 
 const LeaderDashboard = () => {
   const [projects, setProjects] = useState<any[]>([]);
@@ -120,7 +121,13 @@ const LeaderDashboard = () => {
           <Text style={styles.welcomeText}>Hello, Leader 👋</Text>
           <Text style={styles.nameText}>{user?.name}</Text>
         </View>
-        <TouchableOpacity onPress={() => dispatch(logOut())} style={styles.logoutBtn}>
+        <TouchableOpacity 
+          onPress={async () => {
+            await logout();
+            dispatch(logOut());
+          }} 
+          style={styles.logoutBtn}
+        >
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
       </View>

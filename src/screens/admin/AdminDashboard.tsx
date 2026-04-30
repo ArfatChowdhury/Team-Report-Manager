@@ -19,6 +19,7 @@ import Loader from '../../components/common/Loader';
 import client from '../../api/client';
 import { getAllUsers } from '../../api/usersApi';
 import { getAllProjects } from '../../api/projectsApi';
+import { logout } from '../../api/authApi';
 import Svg, { Circle, Rect, G, Text as SvgText } from 'react-native-svg';
 
 const AdminDashboard = () => {
@@ -60,7 +61,8 @@ const AdminDashboard = () => {
     fetchData();
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await logout();
     dispatch(logOut());
   };
 
@@ -108,6 +110,19 @@ const AdminDashboard = () => {
                 <Text style={styles.actionDesc}>Add leaders or members</Text>
               </View>
               <Badge label="Manage" status="in-progress" />
+            </Card>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.actionItem}
+            onPress={() => navigation.navigate('BulkTaskCreation')}
+          >
+            <Card style={styles.actionCard}>
+              <View>
+                <Text style={styles.actionTitle}>Bulk AI Tasks</Text>
+                <Text style={styles.actionDesc}>Generate roadmap via Groq AI</Text>
+              </View>
+              <Badge label="New" status="done" />
             </Card>
           </TouchableOpacity>
 

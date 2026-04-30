@@ -64,13 +64,42 @@ const CreateTask = () => {
     }
   };
 
+  const handleAIImprove = async () => {
+    if (!formData.title && !formData.description) {
+      Alert.alert('Info', 'Please enter a title or description to improve');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await client.post('/ai/improve-task', {
+        title: formData.title,
+        description: formData.description
+      });
+      setFormData({
+        ...formData,
+        title: res.data.title,
+        description: res.data.description
+      });
+    } catch (error) {
+      Alert.alert('Error', 'Failed to improve task writing');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const priorities = ['low', 'medium', 'high'];
 
   return (
     <SafeAreaView style={styles.container}>
       <Loader visible={loading} />
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.projectLabel}>Project: {project.title}</Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.projectLabel}>Project: {project.title}</Text>
+          <TouchableOpacity onPress={handleAIImprove} style={styles.aiBtn}>
+            <Text style={styles.aiBtnText}>✨ AI Improve</Text>
+          </TouchableOpacity>
+        </View>
         
         <Text style={styles.label}>Task Title</Text>
         <Input 
@@ -148,7 +177,26 @@ const CreateTask = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
   scrollContent: { padding: 24 },
-  projectLabel: { fontSize: 13, color: '#6366F1', fontWeight: '700', marginBottom: 20 },
+  headerRow: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    marginBottom: 20 
+  },
+  aiBtn: {
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+  },
+  aiBtnText: {
+    fontSize: 12,
+    color: '#4F46E5',
+    fontWeight: '700',
+  },
+  projectLabel: { fontSize: 13, color: '#6366F1', fontWeight: '700' },
   label: { fontSize: 14, fontWeight: '700', color: '#475569', marginBottom: 8, marginTop: 16 },
   priorityGrid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
   priorityChip: { 
