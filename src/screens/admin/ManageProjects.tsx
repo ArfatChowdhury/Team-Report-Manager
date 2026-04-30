@@ -74,6 +74,11 @@ const ManageProjects = () => {
         <Text style={styles.projectLeader}>
           Leader: <Text style={styles.leaderName}>{item.leader?.name || 'Unassigned'}</Text>
         </Text>
+        {item.deadline && (
+          <Text style={styles.deadlineText}>
+            Deadline: {new Date(item.deadline).toLocaleDateString()}
+          </Text>
+        )}
       </View>
       <View style={styles.actions}>
         <TouchableOpacity 
@@ -125,6 +130,7 @@ const styles = StyleSheet.create({
   projectTitle: { fontSize: 17, fontWeight: '700', color: '#1E293B' },
   projectLeader: { fontSize: 13, color: '#64748B', marginTop: 4 },
   leaderName: { color: '#3B82F6', fontWeight: '600' },
+  deadlineText: { fontSize: 11, color: '#EF4444', marginTop: 2, fontWeight: '500' },
   actions: { alignItems: 'flex-end' },
   editBtn: { paddingVertical: 4, paddingHorizontal: 12, backgroundColor: '#EFF6FF', borderRadius: 6, marginBottom: 6 },
   editText: { color: '#3B82F6', fontSize: 12, fontWeight: '600' },

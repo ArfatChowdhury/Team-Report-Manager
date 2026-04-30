@@ -101,6 +101,9 @@ const MemberDashboard = () => {
           <Text style={styles.projectTitle}>{item.project?.title || 'General'}</Text>
           <Text style={styles.taskTitle}>{item.title}</Text>
           <Text style={styles.priority}>Priority: {item.priority || 'Medium'}</Text>
+          {item.dueDate && (
+            <Text style={styles.dueDateText}>Due: {new Date(item.dueDate).toLocaleDateString()}</Text>
+          )}
         </View>
         <View style={styles.statusCol}>
           <Badge 
@@ -169,6 +172,7 @@ const styles = StyleSheet.create({
   projectTitle: { fontSize: 11, fontWeight: '700', color: '#6366F1', textTransform: 'uppercase', marginBottom: 4 },
   taskTitle: { fontSize: 16, fontWeight: '700', color: '#1E293B' },
   priority: { fontSize: 12, color: '#64748B', marginTop: 4 },
+  dueDateText: { fontSize: 11, color: '#F59E0B', marginTop: 2, fontWeight: '600' },
   statusCol: { alignItems: 'center' },
   tapHint: { fontSize: 10, color: '#94A3B8', marginTop: 4, fontStyle: 'italic' },
   emptyContainer: { alignItems: 'center', marginTop: 80 },

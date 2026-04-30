@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   View, 
   Text, 
@@ -6,7 +6,8 @@ import {
   SafeAreaView, 
   ScrollView,
   TouchableOpacity,
-  Alert 
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
@@ -15,17 +16,19 @@ import Badge from '../../components/common/Badge';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import { carryOverTask } from '../../api/tasksApi';
+import client from '../../api/client';
 
 const TaskDetails = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { task } = route.params;
   const { user } = useSelector((state: RootState) => state.auth);
+  const [aiLoading, setAiLoading] = useState(false);
 
   const handleCarryOver = async () => {
     Alert.alert(
       'Carry Over Task',
-      'This will create a duplicate task for tomorrow. Continue?',
+      'This will create a duplicate task for tomorrow and LOCK this one. Continue?',
       [
         { text: 'Cancel', style: 'cancel' },
         { 
@@ -33,7 +36,7 @@ const TaskDetails = () => {
           onPress: async () => {
             try {
               await carryOverTask(task._id);
-              Alert.alert('Success', 'Task carried over to tomorrow');
+              Alert.alert('Success', 'Task carried over and locked');
               navigation.goBack();
             } catch (err) {
               Alert.alert('Error', 'Failed to carry over task');
@@ -44,6 +47,42 @@ const TaskDetails = () => {
     );
   };
 
+  const handleAIImprove = async () => {
+    try {
+      setAiLoading(true);
+      const prompt = `Rewrite this task title and description to be more professional. 
+      Title: ${task.title}
+      Description: ${task.description}
+      Return ONLY a JSON object: { "title": "...", "description": "..." }`;
+
+      const response = await client.post('/ai/chat', { prompt });
+      const improved = response.data;
+      
+      Alert.alert(
+        'AI Writing Assistant',
+        `Title: ${improved.title}\n\nApply these improvements?`,
+        [
+          { text: 'Discard', style: 'cancel' },
+          { 
+            text: 'Apply', 
+            onPress: async () => {
+              await client.put(`/tasks/${task._id}`, {
+                title: improved.title,
+                description: improved.description
+              });
+              Alert.alert('Success', 'Improvements applied!');
+              navigation.goBack();
+            }
+          }
+        ]
+      );
+    } catch (e) {
+      Alert.alert('AI Error', 'Failed to generate improvements');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -51,6 +90,7 @@ const TaskDetails = () => {
           <Text style={styles.backText}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Task Details</Text>
+        {task.isLocked && <Badge label="LOCKED" status="todo" />}
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -59,7 +99,18 @@ const TaskDetails = () => {
           <Text style={styles.projectTitle}>{task.project?.title || 'General'}</Text>
         </View>
 
-        <Text style={styles.taskTitle}>{task.title}</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.taskTitle}>{task.title}</Text>
+          {(user?.role === 'admin' || user?.role === 'leader') && !task.isLocked && (
+            <TouchableOpacity onPress={handleAIImprove} disabled={aiLoading}>
+              {aiLoading ? (
+                <ActivityIndicator size="small" color="#6366F1" />
+              ) : (
+                <Text style={styles.aiLink}>AI Improve ✨</Text>
+              )}
+            </TouchableOpacity>
+          )}
+        </View>
         
         <View style={styles.badgeRow}>
           <Badge 
@@ -106,7 +157,7 @@ const TaskDetails = () => {
           </View>
         )}
 
-        {(user?.role === 'admin' || user?.role === 'leader') && task.status !== 'done' && (
+        {(user?.role === 'admin' || user?.role === 'leader') && task.status !== 'done' && !task.isLocked && (
           <Button 
             title="Carry Over to Tomorrow" 
             onPress={handleCarryOver}
@@ -123,12 +174,14 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
   backBtn: { padding: 8 },
   backText: { fontSize: 24, color: '#1E293B' },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#1E293B', marginLeft: 8 },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: '#1E293B', marginLeft: 8, flex: 1 },
   content: { padding: 24 },
   projectSection: { marginBottom: 12 },
   projectLabel: { fontSize: 12, color: '#6366F1', fontWeight: '700', textTransform: 'uppercase' },
   projectTitle: { fontSize: 16, color: '#1E293B', fontWeight: '600' },
-  taskTitle: { fontSize: 24, fontWeight: '800', color: '#1E293B', marginBottom: 16 },
+  titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
+  taskTitle: { fontSize: 22, fontWeight: '800', color: '#1E293B', flex: 1, marginRight: 10 },
+  aiLink: { color: '#6366F1', fontWeight: '700', fontSize: 13, backgroundColor: '#EEF2FF', padding: 6, borderRadius: 6 },
   badgeRow: { flexDirection: 'row', marginBottom: 24 },
   descCard: { padding: 16, backgroundColor: '#F8FAFC', marginBottom: 24 },
   sectionLabel: { fontSize: 13, fontWeight: '700', color: '#64748B', marginBottom: 8 },

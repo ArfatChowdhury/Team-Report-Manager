@@ -6,9 +6,10 @@ import {
   SafeAreaView, 
   ScrollView, 
   TouchableOpacity,
-  RefreshControl 
+  RefreshControl,
+  Share
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { logOut } from '../../store/slices/authSlice';
@@ -18,6 +19,7 @@ import Loader from '../../components/common/Loader';
 import client from '../../api/client';
 import { getAllUsers } from '../../api/usersApi';
 import { getAllProjects } from '../../api/projectsApi';
+import Svg, { Circle, Rect, G, Text as SvgText } from 'react-native-svg';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({ users: 0, projects: 0, tasks: 0 });
@@ -137,6 +139,61 @@ const AdminDashboard = () => {
             </View>
           </Card>
 
+          <Text style={styles.sectionTitle}>Productivity Chart</Text>
+          <Card style={styles.chartCard}>
+            <View style={styles.donutContainer}>
+              <Svg height="160" width="160" viewBox="0 0 100 100">
+                <Circle
+                  cx="50"
+                  cy="50"
+                  r="40"
+                  stroke="#F1F5F9"
+                  strokeWidth="10"
+                  fill="transparent"
+                />
+                <Circle
+                  cx="50"
+                  cy="50"
+                  r="40"
+                  stroke="#6366F1"
+                  strokeWidth="10"
+                  fill="transparent"
+                  strokeDasharray={`${(stats.tasks / (stats.tasks + 5 || 1)) * 251} 251`}
+                  strokeLinecap="round"
+                />
+                <SvgText
+                  x="50"
+                  y="55"
+                  textAnchor="middle"
+                  fontSize="12"
+                  fontWeight="bold"
+                  fill="#1E293B"
+                >
+                  {Math.round((stats.tasks / (stats.tasks + 5 || 1)) * 100)}%
+                </SvgText>
+              </Svg>
+              <View style={styles.chartLegend}>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: '#6366F1' }]} />
+                  <Text style={styles.legendText}>Completed</Text>
+                </View>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: '#F1F5F9' }]} />
+                  <Text style={styles.legendText}>Pending</Text>
+                </View>
+                <TouchableOpacity 
+                  style={styles.shareBtn}
+                  onPress={() => {
+                    const message = `*Daily Report Recap*\nTasks Done: ${dailyRecap.totalCompleted}\nTime: ${dailyRecap.totalMinutes}m`;
+                    Share.share({ message });
+                  }}
+                >
+                  <Text style={styles.shareText}>Share via WhatsApp</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Card>
+
         </ScrollView>
       )}
     </SafeAreaView>
@@ -247,6 +304,45 @@ const styles = StyleSheet.create({
     width: 1,
     height: 30,
     backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  chartCard: {
+    padding: 20,
+    marginBottom: 24,
+  },
+  donutContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+  },
+  chartLegend: {
+    marginLeft: 20,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  legendDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 8,
+  },
+  legendText: {
+    fontSize: 13,
+    color: '#64748B',
+  },
+  shareBtn: {
+    marginTop: 16,
+    backgroundColor: '#25D366',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+  },
+  shareText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
 
