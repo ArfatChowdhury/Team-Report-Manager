@@ -7,7 +7,7 @@ import { RootState } from '../store';
 import AuthNavigator from './AuthNavigator';
 import AdminNavigator from './AdminNavigator';
 import LeaderNavigator from './LeaderNavigator';
-import MemberDashboard from '../screens/member/MemberDashboard';
+import MemberNavigator from './MemberNavigator';
 
 const Stack = createStackNavigator();
 
@@ -30,7 +30,7 @@ const RootNavigator = () => {
               <Stack.Screen name="LeaderMain" component={LeaderNavigator} />
             )}
             {user?.role === 'member' && (
-              <Stack.Screen name="MemberMain" component={MemberDashboard} />
+              <Stack.Screen name="MemberMain" component={MemberNavigator} />
             )}
           </>
         )}
