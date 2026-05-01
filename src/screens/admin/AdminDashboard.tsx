@@ -7,25 +7,41 @@ import {
   ScrollView, 
   TouchableOpacity,
   RefreshControl,
-  Share
+  Share,
+  Dimensions,
+  Alert,
+  Pressable
 } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { logOut } from '../../store/slices/authSlice';
-import Card from '../../components/common/Card';
-import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
+import Badge from '../../components/common/Badge';
 import client from '../../api/client';
 import { getAllUsers } from '../../api/usersApi';
 import { getAllProjects } from '../../api/projectsApi';
 import { logout } from '../../api/authApi';
 import LiveTimer from '../../components/common/LiveTimer';
-import Svg, { Circle, Rect, G, Text as SvgText } from 'react-native-svg';
+import Avatar from '../../components/common/Avatar';
+import SkiaDonutChart from '../../components/common/SkiaDonutChart';
+import SkiaStoryBackground from '../../components/common/SkiaStoryBackground';
+import Animated, { 
+  FadeInDown, 
+  FadeInRight, 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withSpring, 
+  withDelay 
+} from 'react-native-reanimated';
+
+const { width } = Dimensions.get('window');
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({ users: 0, projects: 0, tasks: 0, pending: 0, totalTasks: 0, highPriorityCount: 0, overdueProjects: 0 });
-  const [dailyRecap, setDailyRecap] = useState({ totalCompleted: 0, totalMinutes: 0 });
+  const [dailyRecap, setDailyRecap] = useState({ totalCompletedToday: 0, totalMinutes: 0 });
   const [activeTasks, setActiveTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -54,8 +70,8 @@ const AdminDashboard = () => {
         overdueProjects: summary.data.overdueProjects
       });
       setDailyRecap({
-        totalCompletedToday: summary.data.totalCompletedToday,
-        totalMinutes: summary.data.totalMinutes
+        totalCompletedToday: summary.data.totalCompletedToday || 0,
+        totalMinutes: summary.data.totalMinutes || 0
       });
     } catch (error) {
       console.error('Error fetching admin stats:', error);
@@ -79,192 +95,195 @@ const AdminDashboard = () => {
     dispatch(logOut());
   };
 
-  // Removed early return to fix Hook order issues
+  const handleWipeout = () => {
+    Alert.alert(
+      "🚀 System Wipeout",
+      "Are you absolutely sure? This will delete ALL tasks, projects, and members. You cannot undo this.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "WIPE EVERYTHING", 
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await client.post('/users/wipeout');
+              Alert.alert("Success", "System wiped successfully.");
+              fetchData();
+            } catch (error: any) {
+              Alert.alert("Error", error.response?.data?.message || "Wipeout failed");
+            } finally {
+              setLoading(false);
+              await fetchData();
+            }
+          }
+        }
+      ]
+    );
+  };
 
+  const ActionCard = ({ title, desc, icon, onPress, delay }: any) => {
+    const scale = useSharedValue(1);
+    const animatedStyle = useAnimatedStyle(() => ({
+      transform: [{ scale: scale.value }]
+    }));
+
+    return (
+      <Animated.View entering={FadeInDown.delay(delay).duration(600)}>
+        <AnimatedPressable
+          onPress={onPress}
+          onPressIn={() => (scale.value = withSpring(0.95))}
+          onPressOut={() => (scale.value = withSpring(1))}
+          style={[styles.glassCard, styles.actionCard, animatedStyle]}
+        >
+          <View style={styles.iconContainer}>{icon}</View>
+          <View>
+            <Text style={styles.actionTitle}>{title}</Text>
+            <Text style={styles.actionDesc}>{desc}</Text>
+          </View>
+        </AnimatedPressable>
+      </Animated.View>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
+      <SkiaStoryBackground />
       <Loader visible={loading} />
       {!loading && (
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFFFFF" />}
         >
-          <View style={styles.header}>
-            <View>
-              <Text style={styles.greeting}>Hello, Admin</Text>
-              <Text style={styles.name}>{user?.name}</Text>
+          {/* Futuristic Header */}
+          <View style={styles.topHeader}>
+            <Animated.View entering={FadeInDown.duration(800)} style={styles.profileSection}>
+              <Avatar name={user?.name || 'Admin'} size={56} style={styles.avatarBorder} />
+              <View style={styles.headerText}>
+                <Text style={styles.timeGreeting}>{getTimeGreeting()},</Text>
+                <Text style={styles.adminName}>{user?.name}</Text>
+              </View>
+            </Animated.View>
+            
+            <View style={styles.headerActions}>
+               <TouchableOpacity onPress={handleWipeout} style={styles.wipeoutBtn}>
+                  <Text style={styles.wipeoutText}>Wipeout</Text>
+               </TouchableOpacity>
+               <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
+                  <Text style={styles.logoutText}>Log Out</Text>
+               </TouchableOpacity>
             </View>
-            <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
-              <Text style={styles.logoutText}>Logout</Text>
-            </TouchableOpacity>
           </View>
 
+          {/* Main Hero Stats */}
+          <Animated.View entering={FadeInDown.delay(200).duration(800)} style={[styles.glassCard, styles.heroCard]}>
+             <View style={styles.heroLeft}>
+                <Text style={styles.heroTitle}>Productivity Score</Text>
+                <Text style={styles.heroSubTitle}>Based on current tasks</Text>
+                <View style={styles.heroStatsRow}>
+                   <View>
+                      <Text style={styles.heroStatVal}>{dailyRecap.totalCompletedToday}</Text>
+                      <Text style={styles.heroStatLab}>Done</Text>
+                   </View>
+                   <View style={styles.statDivider} />
+                   <View>
+                      <Text style={styles.heroStatVal}>{dailyRecap.totalMinutes}m</Text>
+                      <Text style={styles.heroStatLab}>Logged</Text>
+                   </View>
+                </View>
+             </View>
+             <View style={styles.heroRight}>
+                <SkiaDonutChart 
+                  completed={stats.totalTasks - stats.pending} 
+                  total={stats.totalTasks} 
+                  size={120} 
+                  strokeWidth={10}
+                />
+             </View>
+          </Animated.View>
+
+          {/* Overdue Alert */}
           {stats.overdueProjects > 0 && (
             <TouchableOpacity 
-              style={styles.overdueBanner}
+              style={styles.overdueAlert}
               onPress={() => navigation.navigate('ManageProjects')}
             >
-              <Text style={styles.overdueText}>⚠️ {stats.overdueProjects} Projects are Overdue!</Text>
+              <Text style={styles.overdueAlertText}>🚨 {stats.overdueProjects} Overdue Projects Found</Text>
             </TouchableOpacity>
           )}
 
-          <View style={styles.statsGrid}>
-            <Card style={[styles.statCard, { width: '31%' }]}>
-              <Text style={styles.statNumber}>{stats.users}</Text>
-              <Text style={styles.statLabel}>Users</Text>
-            </Card>
-            <Card style={[styles.statCard, { width: '31%' }]}>
-              <Text style={[styles.statNumber, { color: '#F59E0B' }]}>{stats.pending}</Text>
-              <Text style={styles.statLabel}>Pending</Text>
-            </Card>
-            <Card style={[styles.statCard, { width: '31%' }]}>
-              <Text style={[styles.statNumber, { color: '#EF4444' }]}>{stats.highPriorityCount || 0}</Text>
-              <Text style={styles.statLabel}>Urgent</Text>
-            </Card>
+          {/* Quick Bento Grid */}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Control Center</Text>
+            <TouchableOpacity onPress={() => Share.share({ message: `Admin Summary: ${stats.totalTasks} Tasks` })}>
+               <Text style={styles.seeAll}>Share Report</Text>
+            </TouchableOpacity>
           </View>
 
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          
-          <TouchableOpacity 
-            style={styles.actionItem}
-            onPress={() => navigation.navigate('ManageUsers')}
-          >
-            <Card style={styles.actionCard}>
-              <View>
-                <Text style={styles.actionTitle}>Manage Team</Text>
-                <Text style={styles.actionDesc}>Add leaders or members</Text>
-              </View>
-              <Badge label="Manage" status="in-progress" />
-            </Card>
-          </TouchableOpacity>
+          <View style={styles.bentoGrid}>
+             <View style={styles.bentoCol}>
+                <ActionCard 
+                  title="Team" 
+                  desc={`${stats.users} Active`} 
+                  icon={<Text style={{ fontSize: 24 }}>👥</Text>} 
+                  onPress={() => navigation.navigate('ManageUsers')}
+                  delay={400}
+                />
+                <ActionCard 
+                  title="Projects" 
+                  desc={`${stats.projects} Total`} 
+                  icon={<Text style={{ fontSize: 24 }}>📁</Text>} 
+                  onPress={() => navigation.navigate('ManageProjects')}
+                  delay={600}
+                />
+             </View>
+             <View style={styles.bentoCol}>
+                <ActionCard 
+                  title="AI Tasks" 
+                  desc="Groq Engine" 
+                  icon={<Text style={{ fontSize: 24 }}>✨</Text>} 
+                  onPress={() => navigation.navigate('BulkTaskCreation')}
+                  delay={500}
+                />
+                <View style={[styles.glassCard, styles.miniStatCard]}>
+                   <Text style={styles.miniLabel}>Pending</Text>
+                   <Text style={[styles.miniVal, { color: '#FBBF24' }]}>{stats.pending}</Text>
+                </View>
+                <View style={[styles.glassCard, styles.miniStatCard, { marginTop: 12 }]}>
+                   <Text style={styles.miniLabel}>Urgent</Text>
+                   <Text style={[styles.miniVal, { color: '#FB7185' }]}>{stats.highPriorityCount}</Text>
+                </View>
+             </View>
+          </View>
 
-          <TouchableOpacity 
-            style={styles.actionItem}
-            onPress={() => navigation.navigate('BulkTaskCreation')}
-          >
-            <Card style={styles.actionCard}>
-              <View>
-                <Text style={styles.actionTitle}>Bulk AI Tasks</Text>
-                <Text style={styles.actionDesc}>Generate roadmap via Groq AI</Text>
-              </View>
-              <Badge label="New" status="done" />
-            </Card>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.actionItem}
-            onPress={() => navigation.navigate('ManageProjects')}
-          >
-            <Card style={styles.actionCard}>
-              <View>
-                <Text style={styles.actionTitle}>Manage Projects</Text>
-                <Text style={styles.actionDesc}>Create and assign projects</Text>
-              </View>
-              <Badge label="Active" status="in-progress" />
-            </Card>
-          </TouchableOpacity>
-
-          <Text style={styles.sectionTitle}>Today's Achievement</Text>
-          <Card style={styles.recapCard}>
-            <View style={styles.recapRow}>
-              <View style={styles.recapItem}>
-                <Text style={styles.recapVal}>{dailyRecap.totalCompletedToday}</Text>
-                <Text style={styles.recapLab}>Tasks Done</Text>
-              </View>
-              <View style={styles.recapDivider} />
-              <View style={styles.recapItem}>
-                <Text style={styles.recapVal}>{dailyRecap.totalMinutes}m</Text>
-                <Text style={styles.recapLab}>Time Logged</Text>
-              </View>
-            </View>
-          </Card>
-
+          {/* Live Activity Feed */}
           {activeTasks.length > 0 && (
-            <>
-              <Text style={styles.sectionTitle}>Currently Active Tasks</Text>
-              {activeTasks.map(task => (
-                <Card key={task._id} style={{ marginBottom: 12, padding: 16 }}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 16, fontWeight: '700', color: '#1E293B', marginBottom: 4 }}>
-                        {task.title}
-                      </Text>
-                      <Text style={{ fontSize: 13, color: '#64748B' }}>
-                        👤 {task.assignedTo?.name || 'Unassigned'}
-                      </Text>
-                    </View>
-                    <View style={{ alignItems: 'flex-end' }}>
-                      <Badge label="IN PROGRESS" status="in-progress" />
-                      {task.allocatedMinutes > 0 && (
-                        <LiveTimer 
-                          startedAt={task.startedAt} 
-                          allocatedMinutes={task.allocatedMinutes} 
-                          status={task.status}
-                          style={{ marginTop: 8, fontSize: 12 }} 
-                        />
-                      )}
-                    </View>
+            <View style={{ marginTop: 24 }}>
+              <Text style={styles.sectionTitle}>Live Activity Feed</Text>
+              {activeTasks.map((task, index) => (
+                <Animated.View 
+                  key={task._id} 
+                  entering={FadeInRight.delay(700 + (index * 100)).duration(500)}
+                  style={[styles.glassCard, styles.activityCard]}
+                >
+                  <Avatar name={task.assignedTo?.name || 'U'} size={40} />
+                  <View style={styles.activityInfo}>
+                    <Text style={styles.activityTitle} numberOfLines={1}>{task.title}</Text>
+                    <Text style={styles.activityUser}>{task.assignedTo?.name}</Text>
                   </View>
-                </Card>
+                  <View style={styles.activityEnd}>
+                     <Badge label="LIVE" status="in-progress" />
+                     <LiveTimer 
+                        startedAt={task.startedAt} 
+                        allocatedMinutes={task.allocatedMinutes} 
+                        status={task.status}
+                        style={styles.activityTimer} 
+                     />
+                  </View>
+                </Animated.View>
               ))}
-            </>
-          )}
-
-          <Text style={styles.sectionTitle}>Productivity Chart</Text>
-          <Card style={styles.chartCard}>
-            <View style={styles.donutContainer}>
-              <Svg height="160" width="160" viewBox="0 0 100 100">
-                <Circle
-                  cx="50"
-                  cy="50"
-                  r="40"
-                  stroke="#F1F5F9"
-                  strokeWidth="10"
-                  fill="transparent"
-                />
-                <Circle
-                  cx="50"
-                  cy="50"
-                  r="40"
-                  stroke="#6366F1"
-                  strokeWidth="10"
-                  fill="transparent"
-                  strokeDasharray={`${((stats.totalTasks - stats.pending) / (stats.totalTasks || 1)) * 251} 251`}
-                  strokeLinecap="round"
-                />
-                <SvgText
-                  x="50"
-                  y="55"
-                  textAnchor="middle"
-                  fontSize="12"
-                  fontWeight="bold"
-                  fill="#1E293B"
-                >
-                  {Math.round(((stats.totalTasks - stats.pending) / (stats.totalTasks || 1)) * 100)}%
-                </SvgText>
-              </Svg>
-              <View style={styles.chartLegend}>
-                <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: '#6366F1' }]} />
-                  <Text style={styles.legendText}>Completed</Text>
-                </View>
-                <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: '#F1F5F9' }]} />
-                  <Text style={styles.legendText}>Pending</Text>
-                </View>
-                <TouchableOpacity 
-                  style={styles.shareBtn}
-                  onPress={() => {
-                    const message = `*Daily Report Recap*\nTasks Done: ${dailyRecap.totalCompleted}\nTime: ${dailyRecap.totalMinutes}m`;
-                    Share.share({ message });
-                  }}
-                >
-                  <Text style={styles.shareText}>Share via WhatsApp</Text>
-                </TouchableOpacity>
-              </View>
             </View>
-          </Card>
+          )}
 
         </ScrollView>
       )}
@@ -272,163 +291,239 @@ const AdminDashboard = () => {
   );
 };
 
+const getTimeGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good Morning';
+  if (hour < 18) return 'Good Afternoon';
+  return 'Good Evening';
+};
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: 'transparent',
   },
   scrollContent: {
     padding: 20,
   },
-  header: {
+  glassCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  topHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 24,
   },
-  greeting: {
-    fontSize: 16,
-    color: '#64748B',
+  profileSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  name: {
-    fontSize: 24,
+  avatarBorder: {
+    borderWidth: 2,
+    borderColor: '#38BDF8',
+  },
+  headerText: {
+    marginLeft: 14,
+  },
+  timeGreeting: {
+    fontSize: 14,
+    color: '#94A3B8',
+    fontWeight: '500',
+  },
+  adminName: {
+    fontSize: 22,
     fontWeight: '800',
-    color: '#1E293B',
+    color: '#F8FAFC',
+    marginTop: 2,
+  },
+  headerActions: {
+    flexDirection: 'row',
+  },
+  wipeoutBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+  },
+  wipeoutText: {
+    color: '#EF4444',
+    fontWeight: '600',
+    fontSize: 13,
   },
   logoutBtn: {
     paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   logoutText: {
-    color: '#EF4444',
+    color: '#E2E8F0',
     fontWeight: '600',
+    fontSize: 13,
   },
-  statsGrid: {
+  heroCard: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-  },
-  statCard: {
-    width: '48%',
+    padding: 24,
     alignItems: 'center',
-    paddingVertical: 20,
+    marginBottom: 24,
+    backgroundColor: 'rgba(56, 189, 248, 0.05)',
+    borderColor: 'rgba(56, 189, 248, 0.2)',
   },
-  statNumber: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#10B981',
+  heroLeft: {
+    flex: 1,
   },
-  statLabel: {
-    fontSize: 14,
-    color: '#64748B',
-    marginTop: 4,
-  },
-  sectionTitle: {
+  heroTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1E293B',
-    marginBottom: 12,
+    color: '#F8FAFC',
   },
-  actionItem: {
-    marginBottom: 12,
+  heroSubTitle: {
+    fontSize: 12,
+    color: '#94A3B8',
+    marginTop: 2,
   },
-  actionCard: {
+  heroStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  heroStatVal: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#38BDF8',
+  },
+  heroStatLab: {
+    fontSize: 10,
+    color: '#94A3B8',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginTop: 2,
+  },
+  statDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    marginHorizontal: 20,
+  },
+  heroRight: {
+    marginLeft: 16,
+  },
+  overdueAlert: {
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    padding: 16,
+    borderRadius: 20,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  overdueAlertText: {
+    color: '#FB7185',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#F8FAFC',
+    letterSpacing: 0.5,
+  },
+  seeAll: {
+    fontSize: 14,
+    color: '#38BDF8',
+    fontWeight: '600',
+  },
+  bentoGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  bentoCol: {
+    width: '48%',
+  },
+  actionCard: {
+    padding: 20,
+    marginBottom: 16,
+  },
+  iconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
   },
   actionTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1E293B',
+    fontWeight: '700',
+    color: '#F8FAFC',
   },
   actionDesc: {
-    fontSize: 13,
-    color: '#64748B',
+    fontSize: 12,
+    color: '#94A3B8',
     marginTop: 2,
   },
-  recapCard: {
-    backgroundColor: '#6366F1',
-    padding: 20,
-    marginBottom: 20,
-  },
-  recapRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+  miniStatCard: {
+    padding: 16,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  recapItem: {
-    alignItems: 'center',
+  miniLabel: {
+    fontSize: 11,
+    color: '#94A3B8',
+    fontWeight: '600',
+    textTransform: 'uppercase',
   },
-  recapVal: {
-    fontSize: 24,
+  miniVal: {
+    fontSize: 20,
     fontWeight: '800',
-    color: '#FFFFFF',
-  },
-  recapLab: {
-    fontSize: 12,
-    color: '#E0E7FF',
     marginTop: 4,
   },
-  recapDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-  },
-  chartCard: {
-    padding: 20,
-    marginBottom: 24,
-  },
-  donutContainer: {
+  activityCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-around',
+    padding: 16,
+    marginBottom: 12,
   },
-  chartLegend: {
-    marginLeft: 20,
+  activityInfo: {
+    flex: 1,
+    marginLeft: 14,
   },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
+  activityTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#F8FAFC',
   },
-  legendDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 8,
-  },
-  legendText: {
-    fontSize: 13,
-    color: '#64748B',
-  },
-  shareBtn: {
-    marginTop: 16,
-    backgroundColor: '#25D366',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-  },
-  shareText: {
-    color: '#FFFFFF',
+  activityUser: {
     fontSize: 12,
-    fontWeight: '700',
+    color: '#94A3B8',
+    marginTop: 2,
   },
-  overdueBanner: {
-    backgroundColor: '#FEF2F2',
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#FCA5A5',
-    alignItems: 'center'
+  activityEnd: {
+    alignItems: 'flex-end',
   },
-  overdueText: {
-    color: '#B91C1C',
-    fontWeight: '700',
-    fontSize: 14
+  activityTimer: {
+    fontSize: 11,
+    color: '#38BDF8',
+    fontWeight: '600',
+    marginTop: 4,
   }
 });
 

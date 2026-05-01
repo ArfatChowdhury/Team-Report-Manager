@@ -7,10 +7,12 @@ import {
   FlatList, 
   TouchableOpacity,
   RefreshControl,
-  Alert
+  Alert,
+  ScrollView,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
 import { RootState } from '../../store';
 import { logOut } from '../../store/slices/authSlice';
 import Card from '../../components/common/Card';
@@ -20,6 +22,8 @@ import { getProjectTasks, updateTaskStatus } from '../../api/tasksApi';
 import { logout } from '../../api/authApi';
 import client from '../../api/client';
 import LiveTimer from '../../components/common/LiveTimer';
+import Avatar from '../../components/common/Avatar';
+import SkiaStoryBackground from '../../components/common/SkiaStoryBackground';
 
 const MemberDashboard = () => {
   const [tasks, setTasks] = useState<any[]>([]);
@@ -92,108 +96,283 @@ const MemberDashboard = () => {
     }
   };
 
-  const renderTaskItem = ({ item }: { item: any }) => (
-    <TouchableOpacity 
-      onPress={() => navigation.navigate('TaskDetails', { task: item })}
-      onLongPress={() => handleStatusUpdate(item._id, item.status)}
-      delayLongPress={200}
-    >
-      <Card style={[styles.taskCard, item.status === 'done' && styles.taskDone]}>
-        <View style={styles.taskInfo}>
-          <Text style={styles.projectTitle}>{item.project?.title || 'General'}</Text>
-          <Text style={styles.taskTitle}>{item.title}</Text>
-          <Text style={styles.priority}>Priority: {item.priority || 'Medium'}</Text>
-          {item.dueDate && (
-            <Text style={styles.dueDateText}>Due: {new Date(item.dueDate).toLocaleDateString()}</Text>
-          )}
-          {item.status === 'in-progress' && item.allocatedMinutes > 0 && (
-            <LiveTimer 
-              startedAt={item.startedAt} 
-              allocatedMinutes={item.allocatedMinutes} 
-              status={item.status} 
-              style={{ marginTop: 8, fontSize: 12 }} 
+  const getTimeGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 18) return 'Good Afternoon';
+    return 'Good Evening';
+  };
+
+  const renderTaskItem = ({ item, index }: { item: any; index: number }) => (
+    <Animated.View entering={FadeInDown.delay(index * 100).duration(600)}>
+      <TouchableOpacity 
+        onPress={() => navigation.navigate('TaskDetails', { task: item })}
+        onLongPress={() => handleStatusUpdate(item._id, item.status)}
+        delayLongPress={200}
+      >
+        <Card style={[styles.taskCard, item.status === 'done' && styles.taskDone]}>
+          <View style={styles.taskInfo}>
+            <Text style={styles.projectTitle}>{item.project?.title || 'General'}</Text>
+            <Text style={styles.taskTitle}>{item.title}</Text>
+            <View style={styles.taskMeta}>
+               <Text style={styles.priority}>Priority: {item.priority || 'Medium'}</Text>
+               {item.dueDate && (
+                 <Text style={styles.dueDateText}> • Due: {new Date(item.dueDate).toLocaleDateString()}</Text>
+               )}
+            </View>
+            {item.status === 'in-progress' && item.allocatedMinutes > 0 && (
+              <LiveTimer 
+                startedAt={item.startedAt} 
+                allocatedMinutes={item.allocatedMinutes} 
+                status={item.status} 
+                style={styles.timerStyle} 
+              />
+            )}
+          </View>
+          <View style={styles.statusCol}>
+            <Badge 
+              label={item.status} 
+              status={item.status === 'done' ? 'done' : item.status === 'in-progress' ? 'in-progress' : 'todo'} 
             />
-          )}
-        </View>
-        <View style={styles.statusCol}>
-          <Badge 
-            label={item.status} 
-            status={item.status === 'done' ? 'done' : item.status === 'in-progress' ? 'in-progress' : 'todo'} 
-          />
-          <Text style={styles.tapHint}>Long press to update</Text>
-        </View>
-      </Card>
-    </TouchableOpacity>
+            <Text style={styles.tapHint}>Long press to update</Text>
+          </View>
+        </Card>
+      </TouchableOpacity>
+    </Animated.View>
   );
+
+  const completedCount = tasks.filter(t => t.status === 'done').length;
+  const pendingCount = tasks.filter(t => t.status !== 'done').length;
 
   return (
     <SafeAreaView style={styles.container}>
-      <Loader visible={loading} />
-      
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>Member Portal</Text>
-          <Text style={styles.name}>{user?.name}</Text>
-        </View>
-        <TouchableOpacity 
-          onPress={async () => {
-            await logout();
-            dispatch(logOut());
-          }} 
-          style={styles.logoutBtn}
-        >
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
-      </View>
+      <SkiaStoryBackground />
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#38BDF8" />}
+      >
+        {/* Header Section */}
+        <Animated.View entering={FadeInDown.duration(800)} style={styles.topHeader}>
+          <View style={styles.profileSection}>
+            <Avatar 
+              name={user?.name || 'M'} 
+              size={50} 
+              style={styles.avatarBorder}
+            />
+            <View style={styles.headerText}>
+              <Text style={styles.timeGreeting}>{getTimeGreeting()}</Text>
+              <Text style={styles.userName}>{user?.name?.split(' ')[0]}</Text>
+            </View>
+          </View>
+          <TouchableOpacity 
+            onPress={async () => {
+              await logout();
+              dispatch(logOut());
+            }} 
+            style={styles.logoutBtn}
+          >
+            <Text style={styles.logoutText}>Log Out</Text>
+          </TouchableOpacity>
+        </Animated.View>
 
-      <Text style={styles.sectionTitle}>My Assigned Tasks</Text>
-      
-      <FlatList
-        data={tasks}
-        keyExtractor={(item) => item._id}
-        renderItem={renderTaskItem}
-        contentContainerStyle={styles.listContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        ListEmptyComponent={
+        {/* Mini Stats Grid */}
+        <View style={styles.bentoGrid}>
+           <Animated.View entering={FadeInRight.delay(200).duration(800)} style={styles.bentoItem}>
+              <Card style={styles.bentoCard}>
+                 <Text style={styles.bentoVal}>{pendingCount}</Text>
+                 <Text style={styles.bentoLabel}>Pending Tasks</Text>
+              </Card>
+           </Animated.View>
+           <Animated.View entering={FadeInRight.delay(400).duration(800)} style={styles.bentoItem}>
+              <Card style={[styles.bentoCard, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
+                 <Text style={[styles.bentoVal, { color: '#10B981' }]}>{completedCount}</Text>
+                 <Text style={styles.bentoLabel}>Completed</Text>
+              </Card>
+           </Animated.View>
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>My Assigned Tasks</Text>
+          {loading && <Text style={styles.loadingText}>Updating...</Text>}
+        </View>
+
+        {tasks.length === 0 && !loading ? (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No tasks assigned to you yet.</Text>
             <Text style={styles.emptySubText}>Keep up the good work!</Text>
           </View>
-        }
-      />
+        ) : (
+          tasks.map((item, index) => (
+            <React.Fragment key={item._id}>
+              {renderTaskItem({ item, index })}
+            </React.Fragment>
+          ))
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
-  header: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    padding: 24, 
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0'
+  container: {
+    flex: 1,
+    backgroundColor: 'transparent',
   },
-  greeting: { fontSize: 13, color: '#64748B', fontWeight: '600' },
-  name: { fontSize: 20, fontWeight: '800', color: '#1E293B' },
-  logoutBtn: { padding: 8, borderRadius: 8, backgroundColor: '#FEE2E2' },
-  logoutText: { color: '#EF4444', fontWeight: '600', fontSize: 12 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#64748B', marginLeft: 20, marginBottom: 12, marginTop: 20, textTransform: 'uppercase' },
-  listContent: { padding: 16 },
-  taskCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  taskDone: { opacity: 0.6, backgroundColor: '#F1F5F9' },
-  taskInfo: { flex: 1 },
-  projectTitle: { fontSize: 11, fontWeight: '700', color: '#6366F1', textTransform: 'uppercase', marginBottom: 4 },
-  taskTitle: { fontSize: 16, fontWeight: '700', color: '#1E293B' },
-  priority: { fontSize: 12, color: '#64748B', marginTop: 4 },
-  dueDateText: { fontSize: 11, color: '#F59E0B', marginTop: 2, fontWeight: '600' },
-  statusCol: { alignItems: 'center' },
-  tapHint: { fontSize: 10, color: '#94A3B8', marginTop: 4, fontStyle: 'italic' },
-  emptyContainer: { alignItems: 'center', marginTop: 80 },
-  emptyText: { color: '#1E293B', fontSize: 18, fontWeight: '700' },
-  emptySubText: { color: '#94A3B8', fontSize: 14, marginTop: 8 },
+  scrollContent: {
+    padding: 20,
+  },
+  topHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  profileSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatarBorder: {
+    borderWidth: 2,
+    borderColor: '#38BDF8',
+  },
+  headerText: {
+    marginLeft: 14,
+  },
+  timeGreeting: {
+    fontSize: 14,
+    color: '#94A3B8',
+    fontWeight: '500',
+  },
+  userName: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#F8FAFC',
+    marginTop: 2,
+  },
+  logoutBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  logoutText: {
+    color: '#E2E8F0',
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  bentoGrid: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 30,
+  },
+  bentoItem: {
+    flex: 1,
+  },
+  bentoCard: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  bentoVal: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#F8FAFC',
+  },
+  bentoLabel: {
+    fontSize: 12,
+    color: '#94A3B8',
+    marginTop: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#F8FAFC',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  loadingText: {
+    fontSize: 12,
+    color: '#38BDF8',
+  },
+  taskCard: {
+    flexDirection: 'row',
+    padding: 20,
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  taskDone: {
+    opacity: 0.5,
+  },
+  taskInfo: {
+    flex: 1,
+  },
+  projectTitle: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#38BDF8',
+    textTransform: 'uppercase',
+    marginBottom: 4,
+    letterSpacing: 1,
+  },
+  taskTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#F8FAFC',
+  },
+  taskMeta: {
+    flexDirection: 'row',
+    marginTop: 6,
+  },
+  priority: {
+    fontSize: 11,
+    color: '#94A3B8',
+  },
+  dueDateText: {
+    fontSize: 11,
+    color: '#FB7185',
+    fontWeight: '600',
+  },
+  timerStyle: {
+    marginTop: 10,
+    fontSize: 12,
+    color: '#38BDF8',
+    fontWeight: '700',
+  },
+  statusCol: {
+    alignItems: 'center',
+    marginLeft: 10,
+  },
+  tapHint: {
+    fontSize: 9,
+    color: '#64748B',
+    marginTop: 6,
+    fontStyle: 'italic',
+  },
+  emptyContainer: {
+    padding: 60,
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: '#F8FAFC',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  emptySubText: {
+    color: '#94A3B8',
+    fontSize: 14,
+    marginTop: 8,
+  },
 });
+
+export default MemberDashboard;
 
 export default MemberDashboard;

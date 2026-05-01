@@ -108,15 +108,15 @@ const EditProject = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1, backgroundColor: '#020617' },
   scrollContent: { padding: 24 },
-  label: { fontSize: 14, fontWeight: '700', color: '#475569', marginBottom: 8, marginTop: 16 },
+  label: { fontSize: 14, fontWeight: '700', color: '#F8FAFC', marginBottom: 8, marginTop: 16 },
   leaderList: { marginTop: 8 },
-  leaderItem: { padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0', marginBottom: 8 },
-  leaderItemActive: { backgroundColor: '#DBEAFE', borderColor: '#3B82F6' },
-  leaderName: { fontSize: 14, color: '#1E293B' },
-  leaderTextActive: { color: '#1E40AF', fontWeight: '600' },
-  submitBtn: { marginTop: 32 },
+  leaderItem: { padding: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)', marginBottom: 8, backgroundColor: 'rgba(255, 255, 255, 0.05)' },
+  leaderItemActive: { backgroundColor: 'rgba(56, 189, 248, 0.15)', borderColor: '#38BDF8' },
+  leaderName: { fontSize: 14, color: '#94A3B8' },
+  leaderTextActive: { color: '#38BDF8', fontWeight: '700' },
+  submitBtn: { marginTop: 32, backgroundColor: '#38BDF8' },
 });
 
 export default EditProject;

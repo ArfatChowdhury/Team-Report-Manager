@@ -115,7 +115,7 @@ const ManageUsers = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#020617',
   },
   listContent: {
     padding: 16,
@@ -135,15 +135,17 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#E2E8F0',
+    backgroundColor: 'rgba(56, 189, 248, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.3)',
   },
   avatarText: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#64748B',
+    color: '#38BDF8',
   },
   userDetails: {
     flex: 1,
@@ -151,11 +153,11 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1E293B',
+    color: '#F8FAFC',
   },
   userEmail: {
     fontSize: 13,
-    color: '#64748B',
+    color: '#94A3B8',
     marginTop: 2,
   },
   userActions: {
@@ -172,7 +174,7 @@ const styles = StyleSheet.create({
   emptyText: {
     textAlign: 'center',
     marginTop: 40,
-    color: '#64748B',
+    color: '#94A3B8',
   },
   fab: {
     position: 'absolute',
@@ -181,19 +183,19 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#10B981',
+    backgroundColor: '#38BDF8',
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    elevation: 8,
+    shadowColor: '#38BDF8',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
   },
   fabText: {
     fontSize: 32,
-    color: '#FFFFFF',
-    fontWeight: '300',
+    color: '#020617',
+    fontWeight: '400',
   },
 });
 

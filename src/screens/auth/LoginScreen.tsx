@@ -12,7 +12,7 @@ import {
 import { useDispatch } from 'react-redux';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
-import GlassBackground from '../../components/common/GlassBackground';
+import SkiaStoryBackground from '../../components/common/SkiaStoryBackground';
 import { loginWithFirebase } from '../../api/authApi';
 import { setCredentials, setError } from '../../store/slices/authSlice';
 
@@ -36,17 +36,30 @@ const friendlyMessage = (code?: string) =>
 // ─────────────────────────────────────────────────────────────────────────────
 
 const LoginScreen = () => {
-  const [email,    setEmail]    = useState('');
-  const [password, setPassword] = useState('');
-  const [loading,  setLoading]  = useState(false);
+  const [email,         setEmail]         = useState('');
+  const [password,      setPassword]      = useState('');
+  const [emailError,    setEmailError]    = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [loading,       setLoading]       = useState(false);
 
   const dispatch = useDispatch();
 
   const handleLogin = async () => {
-    if (!email.trim() || !password) {
-      Alert.alert('Missing fields', 'Please enter your email and password');
-      return;
+    // Clear previous errors
+    setEmailError('');
+    setPasswordError('');
+
+    let hasError = false;
+    if (!email.trim()) {
+      setEmailError('Please enter your email address');
+      hasError = true;
     }
+    if (!password) {
+      setPasswordError('Please enter your password');
+      hasError = true;
+    }
+
+    if (hasError) return;
 
     setLoading(true);
 
@@ -59,7 +72,19 @@ const LoginScreen = () => {
     } catch (error: any) {
       const message = friendlyMessage(error?.code);
       dispatch(setError(message));
-      Alert.alert('Sign In Failed', message);
+      
+      // Assign specific errors to fields
+      if (error?.code === 'auth/invalid-email' || error?.code === 'auth/user-not-found') {
+        setEmailError(message);
+      } else if (error?.code === 'auth/wrong-password') {
+        setPasswordError(message);
+      } else if (error?.code === 'auth/invalid-credential') {
+        setPasswordError('Email or password is incorrect');
+        setEmailError('Email or password is incorrect');
+      } else {
+        // Fallback for other errors like network failure
+        Alert.alert('Sign In Failed', message);
+      }
     } finally {
       setLoading(false);
     }
@@ -70,9 +95,8 @@ const LoginScreen = () => {
     // Android status-bar and iOS home-indicator insets are painted.
     <SafeAreaView style={styles.root}>
 
-      {/* BUG FIX 1: WaterRipple lives OUTSIDE KeyboardAvoidingView so it
-          anchors to the full screen and doesn't shift when the keyboard opens. */}
-      <GlassBackground />
+      {/* Skia Animated Background for storytelling synergy */}
+      <SkiaStoryBackground />
 
       <KeyboardAvoidingView
         style={styles.flex}
@@ -87,23 +111,25 @@ const LoginScreen = () => {
             <Text style={styles.subtitle}>Sign in to start reporting</Text>
           </View>
 
-          <View style={styles.form}>
+          <View style={[styles.form, styles.glassCard]}>
             <Input
               label="Email Address"
               placeholder="admin@teamreport.com"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text) => { setEmail(text); setEmailError(''); }}
               keyboardType="email-address"
               autoCapitalize="none"
               autoComplete="email"
+              error={emailError}
             />
 
             <Input
               label="Password"
               placeholder="••••••••"
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(text) => { setPassword(text); setPasswordError(''); }}
               secureTextEntry
+              error={passwordError}
             />
 
             <Button
@@ -151,12 +177,22 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    // BUG FIX: #64748B is near-invisible on the dark overlay — bumped to
-    // slate-300 so it meets WCAG AA contrast against the dark background.
     color: '#CBD5E1',
   },
   form: {
     width: '100%',
+  },
+  glassCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 5,
   },
   button: {
     marginTop: 24,

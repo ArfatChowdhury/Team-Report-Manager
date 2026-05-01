@@ -8,16 +8,21 @@ import {
   RefreshControl,
   SafeAreaView,
   Modal,
-  TextInput
+  TextInput,
+  Dimensions,
+  Alert
 } from 'react-native';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
+import Animated, { FadeInDown, FadeInRight, FadeInUp } from 'react-native-reanimated';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
 import { getProjectTasks } from '../../api/tasksApi';
 import client from '../../api/client';
 import LiveTimer from '../../components/common/LiveTimer';
-import { Alert } from 'react-native';
+import Avatar from '../../components/common/Avatar';
+
+const { width } = Dimensions.get('window');
 
 const ProjectTasks = () => {
   const navigation = useNavigation<any>();
@@ -88,7 +93,7 @@ const ProjectTasks = () => {
               await client.post('/reports/email-report', {
                 to: email,
                 projectTitle: project.title,
-                tasks: tasks // Sends current project tasks
+                tasks: tasks 
               });
               Alert.alert('Success', 'AI Report sent successfully!');
             } catch (err) {
@@ -114,7 +119,6 @@ const ProjectTasks = () => {
           title: task.title,
           project: project._id,
           priority: 'medium'
-          // omitted assignedTo so it remains optional/unassigned
         });
       }).filter(Boolean);
 
@@ -136,68 +140,81 @@ const ProjectTasks = () => {
     setSuggestedTasks(prev => prev.filter(t => t.id !== id));
   };
 
-  const renderTaskItem = ({ item }: { item: any }) => (
-    <TouchableOpacity onPress={() => navigation.navigate('TaskDetails', { task: item })}>
-      <Card style={styles.taskCard}>
-        <View style={styles.taskInfo}>
-          <Text style={styles.taskTitle}>{item.title}</Text>
-          <Text style={styles.assignee}>Assigned to: {item.assignedTo?.name || 'Unassigned'}</Text>
-          {item.dueDate && (
-            <Text style={styles.dueDateText}>Due: {new Date(item.dueDate).toLocaleDateString()}</Text>
-          )}
-          {item.status === 'in-progress' && item.allocatedMinutes > 0 && (
-            <LiveTimer 
-              startedAt={item.startedAt} 
-              allocatedMinutes={item.allocatedMinutes} 
-              status={item.status} 
-              style={{ marginTop: 8, fontSize: 12 }} 
-            />
-          )}
-        </View>
-        <Badge 
-          label={item.status} 
-          status={item.status === 'done' ? 'done' : item.status === 'in-progress' ? 'in-progress' : 'todo'} 
-        />
-      </Card>
-    </TouchableOpacity>
+  const renderTaskItem = ({ item, index }: { item: any; index: number }) => (
+    <Animated.View entering={FadeInDown.delay(index * 100).duration(600)}>
+      <TouchableOpacity onPress={() => navigation.navigate('TaskDetails', { task: item })}>
+        <Card style={styles.taskCard}>
+          <View style={styles.taskContent}>
+            <Avatar name={item.assignedTo?.name || 'U'} size={36} style={styles.taskAvatar} />
+            <View style={styles.taskInfo}>
+              <Text style={styles.taskTitle}>{item.title}</Text>
+              <Text style={styles.assignee}>
+                {item.assignedTo?.name ? `Assigned to ${item.assignedTo.name}` : 'Unassigned'}
+              </Text>
+              {item.dueDate && (
+                <Text style={styles.dueDateText}>Due: {new Date(item.dueDate).toLocaleDateString()}</Text>
+              )}
+              {item.status === 'in-progress' && item.allocatedMinutes > 0 && (
+                <LiveTimer 
+                  startedAt={item.startedAt} 
+                  allocatedMinutes={item.allocatedMinutes} 
+                  status={item.status} 
+                  style={styles.timerStyle} 
+                />
+              )}
+            </View>
+          </View>
+          <Badge 
+            label={item.status} 
+            status={item.status === 'done' ? 'done' : item.status === 'in-progress' ? 'in-progress' : 'todo'} 
+          />
+        </Card>
+      </TouchableOpacity>
+    </Animated.View>
   );
 
   return (
     <SafeAreaView style={styles.container}>
       <Loader visible={loading} />
       
-      <View style={styles.header}>
+      <Animated.View entering={FadeInUp.duration(800)} style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Text style={styles.backText}>←</Text>
         </TouchableOpacity>
         <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerLabel}>Project Tasks</Text>
-          <Text style={styles.headerTitle}>{project.title}</Text>
+          <Text style={styles.headerLabel}>Project Workspace</Text>
+          <Text style={styles.headerTitle} numberOfLines={1}>{project.title}</Text>
         </View>
-        <TouchableOpacity 
-          style={[styles.aiBtn, { marginRight: 8, backgroundColor: '#F0FDF4', borderColor: '#22C55E' }]} 
-          onPress={handleEmailReport}
-        >
-          <Text style={[styles.aiBtnText, { color: '#16A34A' }]}>✉️ Report</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.aiBtn} 
-          onPress={handleAISuggest}
-          disabled={aiLoading}
-        >
-          <Text style={styles.aiBtnText}>{aiLoading ? '...' : 'AI Plan'}</Text>
-        </TouchableOpacity>
-      </View>
+        <View style={styles.headerActions}>
+          <TouchableOpacity 
+            style={[styles.headerIconBtn, { backgroundColor: 'rgba(52, 211, 153, 0.15)', borderColor: 'rgba(52, 211, 153, 0.3)' }]} 
+            onPress={handleEmailReport}
+          >
+            <Text style={[styles.headerIconText, { color: '#34D399' }]}>✉️</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.headerIconBtn} 
+            onPress={handleAISuggest}
+            disabled={aiLoading}
+          >
+            <Text style={styles.headerIconText}>{aiLoading ? '...' : '✨'}</Text>
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
 
       <FlatList
         data={tasks}
         keyExtractor={(item) => item._id}
         renderItem={renderTaskItem}
         contentContainerStyle={styles.listContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#38BDF8" />}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No tasks found for this project.</Text>
+            <Text style={styles.emptyText}>Empty Workspace</Text>
+            <Text style={styles.emptySub}>No tasks have been created yet.</Text>
+            <TouchableOpacity onPress={handleAISuggest} style={styles.emptyAiBtn}>
+               <Text style={styles.emptyAiBtnText}>Generate with AI</Text>
+            </TouchableOpacity>
           </View>
         }
       />
@@ -212,94 +229,305 @@ const ProjectTasks = () => {
       <Modal
         visible={reviewModalVisible}
         animationType="slide"
-        presentationStyle="pageSheet"
+        presentationStyle="overFullScreen"
+        transparent={true}
       >
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Review AI Plan</Text>
-            <TouchableOpacity onPress={() => setReviewModalVisible(false)}>
-              <Text style={styles.modalCloseText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.modalSub}>Edit, remove, or refine tasks before saving.</Text>
-          
-          <FlatList
-            data={suggestedTasks}
-            keyExtractor={item => item.id}
-            contentContainerStyle={styles.modalList}
-            renderItem={({ item }) => (
-              <View style={styles.editTaskRow}>
-                <TextInput
-                  style={styles.editTaskInput}
-                  value={item.title}
-                  onChangeText={(text) => updateSuggestedTask(item.id, text)}
-                  multiline
-                />
-                <TouchableOpacity onPress={() => removeSuggestedTask(item.id)} style={styles.removeBtn}>
-                  <Text style={styles.removeText}>✕</Text>
-                </TouchableOpacity>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalTitle}>AI Strategy Review</Text>
+                <Text style={styles.modalSub}>Refine suggested roadmap</Text>
               </View>
-            )}
-          />
+              <TouchableOpacity onPress={() => setReviewModalVisible(false)} style={styles.modalCloseBtn}>
+                <Text style={styles.modalCloseText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <FlatList
+              data={suggestedTasks}
+              keyExtractor={item => item.id}
+              contentContainerStyle={styles.modalList}
+              renderItem={({ item, index }) => (
+                <Animated.View entering={FadeInRight.delay(index * 50)}>
+                  <View style={styles.editTaskRow}>
+                    <TextInput
+                      style={styles.editTaskInput}
+                      value={item.title}
+                      onChangeText={(text) => updateSuggestedTask(item.id, text)}
+                      multiline
+                      placeholderTextColor="#64748B"
+                    />
+                    <TouchableOpacity onPress={() => removeSuggestedTask(item.id)} style={styles.removeBtn}>
+                      <Text style={styles.removeBtnText}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+                </Animated.View>
+              )}
+            />
 
-          <View style={styles.modalFooter}>
-            <TouchableOpacity style={styles.saveBtn} onPress={handleSaveAITasks}>
-              <Text style={styles.saveBtnText}>Save {suggestedTasks.length} Tasks</Text>
-            </TouchableOpacity>
+            <View style={styles.modalFooter}>
+              <TouchableOpacity style={styles.saveBtn} onPress={handleSaveAITasks}>
+                <Text style={styles.saveBtnText}>Add {suggestedTasks.length} Tasks</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </SafeAreaView>
+        </View>
       </Modal>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  container: { 
+    flex: 1, 
+    backgroundColor: '#020617' 
+  },
   header: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    padding: 16, 
-    backgroundColor: '#FFFFFF',
+    padding: 20, 
+    backgroundColor: 'rgba(2, 6, 23, 0.8)',
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0'
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
-  backBtn: { padding: 8, marginRight: 8 },
-  backText: { fontSize: 24, color: '#1E293B', fontWeight: '600' },
-  headerTitleContainer: { flex: 1 },
-  headerLabel: { fontSize: 12, color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.5 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#1E293B' },
-  aiBtn: { 
-    backgroundColor: '#EEF2FF', 
-    paddingVertical: 6, 
-    paddingHorizontal: 12, 
-    borderRadius: 8, 
+  backBtn: { 
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  backText: { 
+    fontSize: 22, 
+    color: '#F8FAFC', 
+    fontWeight: '300' 
+  },
+  headerTitleContainer: { 
+    flex: 1 
+  },
+  headerLabel: { 
+    fontSize: 10, 
+    color: '#38BDF8', 
+    textTransform: 'uppercase', 
+    letterSpacing: 1.5,
+    fontWeight: '700',
+  },
+  headerTitle: { 
+    fontSize: 18, 
+    fontWeight: '800', 
+    color: '#F8FAFC',
+    marginTop: 2,
+  },
+  headerActions: {
+    flexDirection: 'row',
+  },
+  headerIconBtn: { 
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(56, 189, 248, 0.15)', 
     borderWidth: 1, 
-    borderColor: '#6366F1' 
+    borderColor: 'rgba(56, 189, 248, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
   },
-  aiBtnText: { color: '#6366F1', fontWeight: '700', fontSize: 12 },
-  listContent: { padding: 16 },
-  taskCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  taskInfo: { flex: 1 },
-  taskTitle: { fontSize: 16, fontWeight: '600', color: '#1E293B' },
-  assignee: { fontSize: 13, color: '#64748B', marginTop: 4 },
-  dueDateText: { fontSize: 11, color: '#F59E0B', marginTop: 2, fontWeight: '500' },
-  emptyContainer: { alignItems: 'center', marginTop: 50 },
-  emptyText: { color: '#94A3B8', fontSize: 15 },
-  fab: { position: 'absolute', bottom: 24, right: 24, width: 56, height: 56, borderRadius: 28, backgroundColor: '#6366F1', justifyContent: 'center', alignItems: 'center', elevation: 5 },
-  fabText: { fontSize: 32, color: '#FFFFFF', fontWeight: '300' },
-  modalContainer: { flex: 1, backgroundColor: '#F8FAFC' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
-  modalTitle: { fontSize: 20, fontWeight: '700', color: '#1E293B' },
-  modalCloseText: { fontSize: 16, color: '#EF4444', fontWeight: '600' },
-  modalSub: { padding: 16, color: '#64748B', fontSize: 14 },
-  modalList: { paddingHorizontal: 16, paddingBottom: 100 },
-  editTaskRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, backgroundColor: '#FFFFFF', borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0', overflow: 'hidden' },
-  editTaskInput: { flex: 1, padding: 12, fontSize: 15, color: '#1E293B', minHeight: 48 },
-  removeBtn: { padding: 16, backgroundColor: '#FEF2F2', justifyContent: 'center', alignItems: 'center' },
-  removeText: { color: '#EF4444', fontSize: 16, fontWeight: '700' },
-  modalFooter: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 20, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#E2E8F0' },
-  saveBtn: { backgroundColor: '#6366F1', padding: 16, borderRadius: 12, alignItems: 'center' },
-  saveBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  headerIconText: { 
+    fontSize: 16,
+    color: '#38BDF8',
+  },
+  listContent: { 
+    padding: 16,
+    paddingBottom: 100,
+  },
+  taskCard: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    marginBottom: 12,
+    padding: 16,
+  },
+  taskContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  taskAvatar: { 
+    marginRight: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  taskInfo: { 
+    flex: 1 
+  },
+  taskTitle: { 
+    fontSize: 16, 
+    fontWeight: '700', 
+    color: '#F8FAFC' 
+  },
+  assignee: { 
+    fontSize: 12, 
+    color: '#94A3B8', 
+    marginTop: 4 
+  },
+  dueDateText: { 
+    fontSize: 11, 
+    color: '#FB7185', 
+    marginTop: 6, 
+    fontWeight: '600' 
+  },
+  timerStyle: {
+    marginTop: 8,
+    fontSize: 12,
+    color: '#38BDF8',
+  },
+  emptyContainer: { 
+    alignItems: 'center', 
+    marginTop: 80,
+  },
+  emptyText: { 
+    color: '#F8FAFC', 
+    fontSize: 20,
+    fontWeight: '800' 
+  },
+  emptySub: {
+    color: '#64748B',
+    fontSize: 14,
+    marginTop: 8,
+  },
+  emptyAiBtn: {
+    marginTop: 24,
+    backgroundColor: 'rgba(56, 189, 248, 0.15)',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#38BDF8',
+  },
+  emptyAiBtnText: {
+    color: '#38BDF8',
+    fontWeight: '700',
+  },
+  fab: { 
+    position: 'absolute', 
+    bottom: 30, 
+    right: 24, 
+    width: 60, 
+    height: 60, 
+    borderRadius: 30, 
+    backgroundColor: '#38BDF8', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    elevation: 8,
+    shadowColor: '#38BDF8',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  fabText: { 
+    fontSize: 32, 
+    color: '#020617', 
+    fontWeight: '300' 
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(2, 6, 23, 0.95)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    height: '90%',
+    backgroundColor: '#0F172A',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  modalHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    padding: 24, 
+    borderBottomWidth: 1, 
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)' 
+  },
+  modalTitle: { 
+    fontSize: 22, 
+    fontWeight: '800', 
+    color: '#F8FAFC' 
+  },
+  modalSub: { 
+    fontSize: 14, 
+    color: '#64748B',
+    marginTop: 2,
+  },
+  modalCloseBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCloseText: { 
+    fontSize: 14, 
+    color: '#94A3B8',
+  },
+  modalList: { 
+    padding: 20, 
+    paddingBottom: 120 
+  },
+  editTaskRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginBottom: 12, 
+    backgroundColor: 'rgba(255, 255, 255, 0.03)', 
+    borderRadius: 16, 
+    borderWidth: 1, 
+    borderColor: 'rgba(255, 255, 255, 0.1)', 
+    overflow: 'hidden' 
+  },
+  editTaskInput: { 
+    flex: 1, 
+    padding: 16, 
+    fontSize: 15, 
+    color: '#F8FAFC', 
+    minHeight: 56 
+  },
+  removeBtn: { 
+    padding: 16, 
+    backgroundColor: 'rgba(239, 68, 68, 0.1)', 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  removeBtnText: { 
+    color: '#EF4444', 
+    fontSize: 14, 
+    fontWeight: '700' 
+  },
+  modalFooter: { 
+    position: 'absolute', 
+    bottom: 0, 
+    left: 0, 
+    right: 0, 
+    padding: 24, 
+    backgroundColor: '#0F172A', 
+    borderTopWidth: 1, 
+    borderTopColor: 'rgba(255, 255, 255, 0.1)' 
+  },
+  saveBtn: { 
+    backgroundColor: '#38BDF8', 
+    padding: 18, 
+    borderRadius: 16, 
+    alignItems: 'center' 
+  },
+  saveBtnText: { 
+    color: '#020617', 
+    fontSize: 16, 
+    fontWeight: '800' 
+  },
 });
 
 export default ProjectTasks;

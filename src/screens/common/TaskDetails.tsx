@@ -8,11 +8,13 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
-  Modal
+  Modal,
+  Dimensions
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import Animated, { FadeInDown, FadeInUp, ZoomIn } from 'react-native-reanimated';
 import Badge from '../../components/common/Badge';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
@@ -20,6 +22,9 @@ import { carryOverTask } from '../../api/tasksApi';
 import { getAllUsers } from '../../api/usersApi';
 import client from '../../api/client';
 import LiveTimer from '../../components/common/LiveTimer';
+import Avatar from '../../components/common/Avatar';
+
+const { width, height } = Dimensions.get('window');
 
 const TaskDetails = () => {
   const navigation = useNavigation<any>();
@@ -42,7 +47,6 @@ const TaskDetails = () => {
       console.error('Error fetching users:', error);
     }
   };
-
 
   const confirmAssign = async () => {
     if (!selectedUserId) return;
@@ -134,34 +138,34 @@ const TaskDetails = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+      <Animated.View entering={FadeInUp.duration(800)} style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Text style={styles.backText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Task Details</Text>
-        {task.isLocked && <Badge label="LOCKED" status="todo" />}
-      </View>
+        <Text style={styles.headerTitle} numberOfLines={1}>Task Core</Text>
+        {currentTask.isLocked && <Badge label="LOCKED" status="todo" />}
+      </Animated.View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.projectSection}>
-          <Text style={styles.projectLabel}>Project</Text>
-          <Text style={styles.projectTitle}>{currentTask.project?.title || 'General'}</Text>
-        </View>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <Animated.View entering={FadeInDown.delay(100)} style={styles.projectSection}>
+          <Text style={styles.projectLabel}>Workspace</Text>
+          <Text style={styles.projectTitle}>{currentTask.project?.title || 'General Tasks'}</Text>
+        </Animated.View>
 
-        <View style={styles.titleRow}>
+        <Animated.View entering={FadeInDown.delay(200)} style={styles.titleRow}>
           <Text style={styles.taskTitle}>{currentTask.title}</Text>
           {(user?.role === 'admin' || user?.role === 'leader') && !currentTask.isLocked && (
-            <TouchableOpacity onPress={handleAIImprove} disabled={aiLoading}>
+            <TouchableOpacity onPress={handleAIImprove} disabled={aiLoading} style={styles.aiBtn}>
               {aiLoading ? (
-                <ActivityIndicator size="small" color="#6366F1" />
+                <ActivityIndicator size="small" color="#38BDF8" />
               ) : (
-                <Text style={styles.aiLink}>AI Improve ✨</Text>
+                <Text style={styles.aiBtnText}>✨ AI</Text>
               )}
             </TouchableOpacity>
           )}
-        </View>
+        </Animated.View>
         
-        <View style={styles.badgeRow}>
+        <Animated.View entering={FadeInDown.delay(300)} style={styles.badgeRow}>
           <Badge 
             label={currentTask.status} 
             status={currentTask.status === 'done' ? 'done' : currentTask.status === 'in-progress' ? 'in-progress' : 'todo'} 
@@ -171,109 +175,122 @@ const TaskDetails = () => {
             label={currentTask.priority || 'Medium'} 
             status={currentTask.priority === 'high' ? 'in-progress' : 'todo'} 
           />
-        </View>
+        </Animated.View>
 
-        <Card style={styles.descCard}>
-          <Text style={styles.sectionLabel}>Description</Text>
-          <Text style={styles.description}>
-            {currentTask.description || 'No description provided for this task.'}
-          </Text>
-        </Card>
+        <Animated.View entering={FadeInDown.delay(400)}>
+          <Card style={styles.descCard}>
+            <Text style={styles.sectionLabel}>Objective Details</Text>
+            <Text style={styles.description}>
+              {currentTask.description || 'No detailed instructions provided.'}
+            </Text>
+          </Card>
+        </Animated.View>
 
-        <View style={styles.infoGrid}>
+        <Animated.View entering={FadeInDown.delay(500)} style={styles.infoGrid}>
           <View style={styles.infoItem}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={styles.infoLabel}>Assigned To</Text>
+            <View style={styles.infoLabelRow}>
+              <Text style={styles.infoLabel}>Assigned Agent</Text>
               {(user?.role === 'admin' || user?.role === 'leader') && (
                 <TouchableOpacity onPress={() => { fetchUsers(); setAssignModalVisible(true); }}>
-                  <Text style={styles.assignLink}>Assign</Text>
+                  <Text style={styles.assignLink}>RE-ASSIGN</Text>
                 </TouchableOpacity>
               )}
             </View>
-            <Text style={styles.infoValue}>{currentTask.assignedTo?.name || 'Unassigned'}</Text>
+            <View style={styles.avatarRow}>
+              <Avatar name={currentTask.assignedTo?.name || 'U'} size={32} style={styles.avatarBorder} />
+              <Text style={styles.infoValue}>{currentTask.assignedTo?.name || 'Unassigned'}</Text>
+            </View>
           </View>
           <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>Assigned By</Text>
-            <Text style={styles.infoValue}>{currentTask.assignedBy?.name || 'Manager'}</Text>
+            <Text style={styles.infoLabel}>Strategy Origin</Text>
+            <View style={styles.avatarRow}>
+              <Avatar name={currentTask.assignedBy?.name || 'M'} size={32} style={styles.avatarBorder} />
+              <Text style={styles.infoValue}>{currentTask.assignedBy?.name || 'System'}</Text>
+            </View>
           </View>
-        </View>
+        </Animated.View>
 
         {(currentTask.startedAt || currentTask.allocatedMinutes > 0) && (
-          <View style={styles.timeSection}>
-            <Text style={styles.infoLabel}>Timeline & Tracking</Text>
+          <Animated.View entering={FadeInDown.delay(600)} style={styles.timeSection}>
+            <Text style={styles.sectionLabel}>Operations Timeline</Text>
             
-            {currentTask.allocatedMinutes > 0 && (
-              <Text style={styles.timeValue}>
-                Budget: {currentTask.allocatedMinutes >= 1440 
-                  ? `${(currentTask.allocatedMinutes / 1440).toFixed(1)} Days` 
-                  : `${Math.round(currentTask.allocatedMinutes / 60)} Hours`}
-              </Text>
-            )}
+            <View style={styles.timeStats}>
+              {currentTask.allocatedMinutes > 0 && (
+                <View style={styles.timeStatItem}>
+                   <Text style={styles.timeStatLabel}>Budgeted Time</Text>
+                   <Text style={styles.timeStatValue}>
+                      {currentTask.allocatedMinutes >= 1440 
+                        ? `${(currentTask.allocatedMinutes / 1440).toFixed(1)} Days` 
+                        : `${Math.round(currentTask.allocatedMinutes / 60)} Hours`}
+                   </Text>
+                </View>
+              )}
 
-            <LiveTimer 
-              startedAt={currentTask.startedAt} 
-              allocatedMinutes={currentTask.allocatedMinutes} 
-              status={currentTask.status} 
-              style={[styles.timeTrackedValue, { fontSize: 16 }]}
-            />
+              <View style={styles.timeStatItem}>
+                 <Text style={styles.timeStatLabel}>Active Progress</Text>
+                 <LiveTimer 
+                    startedAt={currentTask.startedAt} 
+                    allocatedMinutes={currentTask.allocatedMinutes} 
+                    status={currentTask.status} 
+                    style={styles.liveTimerText}
+                  />
+              </View>
+            </View>
 
-            {currentTask.startedAt && (
-              <Text style={styles.timeValue}>Started: {new Date(currentTask.startedAt).toLocaleDateString()}</Text>
-            )}
-            {currentTask.completedAt && (
-              <Text style={styles.timeValue}>Completed: {new Date(currentTask.completedAt).toLocaleDateString()}</Text>
-            )}
-            {currentTask.timeTracked > 0 && (
-              <Text style={styles.timeTrackedValue}>⏱️ Time Tracked: {currentTask.timeTracked} mins</Text>
-            )}
-            {currentTask.dueDate && (
-              <Text style={[styles.timeValue, { color: '#EF4444', fontWeight: '700' }]}>
-                Deadline: {new Date(currentTask.dueDate).toLocaleDateString()}
-              </Text>
-            )}
-          </View>
+            <View style={styles.timelineFooter}>
+               {currentTask.dueDate && (
+                <Text style={styles.deadlineText}>
+                  Deadline: {new Date(currentTask.dueDate).toLocaleDateString()}
+                </Text>
+              )}
+               {currentTask.timeTracked > 0 && (
+                <Text style={styles.trackedText}>⏱️ {currentTask.timeTracked}m tracked</Text>
+              )}
+            </View>
+          </Animated.View>
         )}
 
-        {!currentTask.isLocked && (user?.role === 'member' ? user._id === currentTask.assignedTo?._id : true) && (
-          <View style={styles.actionButtons}>
-            {statusLoading ? <ActivityIndicator size="large" color="#6366F1" /> : (
-              <>
-                {(currentTask.status === 'todo' || currentTask.status === 'pause') && (
-                  <Button title="Start Task" onPress={() => handleStatusChange('in-progress')} style={styles.startBtn} />
-                )}
-                {currentTask.status === 'in-progress' && (
-                  <>
-                    <Button title="Pause" onPress={() => handleStatusChange('pause')} style={styles.pauseBtn} />
-                    <Button title="Mark as Done" onPress={() => handleStatusChange('done')} style={styles.doneBtn} />
-                  </>
-                )}
-              </>
-            )}
-          </View>
-        )}
+        <Animated.View entering={FadeInUp.delay(700)} style={styles.actionSection}>
+          {!currentTask.isLocked && (user?.role === 'member' ? user._id === currentTask.assignedTo?._id : true) && (
+            <View style={styles.actionButtons}>
+              {statusLoading ? <ActivityIndicator size="large" color="#38BDF8" /> : (
+                <>
+                  {(currentTask.status === 'todo' || currentTask.status === 'pause') && (
+                    <Button title="Engage Progress" onPress={() => handleStatusChange('in-progress')} style={styles.startBtn} />
+                  )}
+                  {currentTask.status === 'in-progress' && (
+                    <View style={styles.dualActions}>
+                      <TouchableOpacity onPress={() => handleStatusChange('pause')} style={styles.pauseIconButton}>
+                         <Text style={styles.pauseIconText}>⏸</Text>
+                      </TouchableOpacity>
+                      <Button title="Finalize Mission" onPress={() => handleStatusChange('done')} style={styles.doneBtn} />
+                    </View>
+                  )}
+                </>
+              )}
+            </View>
+          )}
 
-        {(user?.role === 'admin' || user?.role === 'leader') && currentTask.status !== 'done' && !currentTask.isLocked && (
-          <Button 
-            title="Carry Over to Tomorrow" 
-            onPress={handleCarryOver}
-            style={styles.carryOverBtn}
-          />
-        )}
+          {(user?.role === 'admin' || user?.role === 'leader') && currentTask.status !== 'done' && !currentTask.isLocked && (
+            <TouchableOpacity 
+              onPress={handleCarryOver}
+              style={styles.carryOverTrigger}
+            >
+              <Text style={styles.carryOverText}>Carry Over to Next Cycle</Text>
+            </TouchableOpacity>
+          )}
+        </Animated.View>
       </ScrollView>
 
       <Modal
         visible={assignModalVisible}
         transparent
-        animationType="slide"
-        onRequestClose={() => {
-          setAssignModalVisible(false);
-          setSelectedUserId(null);
-        }}
+        animationType="fade"
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Assign Task To</Text>
-            <ScrollView style={{ maxHeight: 300, marginBottom: 16 }} showsVerticalScrollIndicator={false}>
+          <Animated.View entering={ZoomIn.duration(400)} style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Re-Assign Operation</Text>
+            <ScrollView style={styles.userListScroll} showsVerticalScrollIndicator={false}>
               {users.map((u: any) => (
                 <TouchableOpacity 
                   key={u._id} 
@@ -281,35 +298,36 @@ const TaskDetails = () => {
                   onPress={() => setSelectedUserId(u._id)}
                   disabled={assignLoading}
                 >
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <View>
-                      <Text style={[styles.userName, selectedUserId === u._id && styles.userNameActive]}>{u.name}</Text>
-                      <Text style={styles.userRole}>{u.role}</Text>
-                    </View>
-                    <View style={[styles.workloadBadge, u.activeTasks > 5 ? styles.highWorkload : styles.normalWorkload]}>
-                      <Text style={styles.workloadText}>{u.activeTasks || 0} tasks</Text>
-                    </View>
+                  <Avatar name={u.name} size={40} style={styles.avatarBorder} />
+                  <View style={styles.userInfo}>
+                    <Text style={[styles.userName, selectedUserId === u._id && styles.userNameActive]}>{u.name}</Text>
+                    <Text style={styles.userRole}>{u.role}</Text>
+                  </View>
+                  <View style={[styles.workloadBadge, u.activeTasks > 5 ? styles.highWorkload : styles.normalWorkload]}>
+                    <Text style={styles.workloadText}>{u.activeTasks || 0} OPS</Text>
                   </View>
                 </TouchableOpacity>
               ))}
             </ScrollView>
             <View style={styles.modalActionsRow}>
-              <Button 
-                title="Cancel" 
+              <TouchableOpacity 
                 onPress={() => {
                   setAssignModalVisible(false);
                   setSelectedUserId(null);
                 }} 
-                style={[styles.cancelBtn, { flex: 1, marginRight: 8 }]} 
-              />
-              <Button 
-                title={assignLoading ? "Assigning..." : "Confirm"} 
+                style={styles.modalCancelBtn}
+              >
+                <Text style={styles.modalCancelText}>Abort</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
                 onPress={confirmAssign}
                 disabled={!selectedUserId || assignLoading} 
-                style={[styles.confirmBtn, { flex: 1, marginLeft: 8 }, (!selectedUserId || assignLoading) && { opacity: 0.5 }]} 
-              />
+                style={[styles.modalConfirmBtn, (!selectedUserId || assignLoading) && { opacity: 0.5 }]}
+              >
+                <Text style={styles.modalConfirmText}>{assignLoading ? '...' : 'Assign'}</Text>
+              </TouchableOpacity>
             </View>
-          </View>
+          </Animated.View>
         </View>
       </Modal>
     </SafeAreaView>
@@ -317,50 +335,343 @@ const TaskDetails = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
-  header: { flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
-  backBtn: { padding: 8 },
-  backText: { fontSize: 24, color: '#1E293B' },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#1E293B', marginLeft: 8, flex: 1 },
-  content: { padding: 24 },
-  projectSection: { marginBottom: 12 },
-  projectLabel: { fontSize: 12, color: '#6366F1', fontWeight: '700', textTransform: 'uppercase' },
-  projectTitle: { fontSize: 16, color: '#1E293B', fontWeight: '600' },
-  titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
-  taskTitle: { fontSize: 22, fontWeight: '800', color: '#1E293B', flex: 1, marginRight: 10 },
-  aiLink: { color: '#6366F1', fontWeight: '700', fontSize: 13, backgroundColor: '#EEF2FF', padding: 6, borderRadius: 6 },
-  badgeRow: { flexDirection: 'row', marginBottom: 24 },
-  descCard: { padding: 16, backgroundColor: '#F8FAFC', marginBottom: 24 },
-  sectionLabel: { fontSize: 13, fontWeight: '700', color: '#64748B', marginBottom: 8 },
-  description: { fontSize: 15, color: '#334155', lineHeight: 22 },
-  infoGrid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24 },
-  infoItem: { flex: 1 },
-  infoLabel: { fontSize: 12, color: '#94A3B8', fontWeight: '600', marginBottom: 4 },
-  infoValue: { fontSize: 15, color: '#1E293B', fontWeight: '600' },
-  timeSection: { borderTopWidth: 1, borderTopColor: '#F1F5F9', paddingTop: 16, marginBottom: 20 },
-  timeValue: { fontSize: 14, color: '#64748B', marginTop: 4 },
-  timeTrackedValue: { fontSize: 15, color: '#10B981', marginTop: 8, fontWeight: '700' },
-  actionButtons: { marginTop: 16, gap: 12 },
-  startBtn: { backgroundColor: '#3B82F6' },
-  pauseBtn: { backgroundColor: '#F59E0B' },
-  doneBtn: { backgroundColor: '#10B981' },
-  carryOverBtn: { backgroundColor: '#F59E0B', marginTop: 12 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
-  modalContent: { backgroundColor: '#FFFFFF', padding: 24, borderRadius: 16 },
-  modalTitle: { fontSize: 18, fontWeight: '800', color: '#1E293B', marginBottom: 16, textAlign: 'center' },
-  userItem: { padding: 16, borderBottomWidth: 1, borderBottomColor: '#F1F5F9', borderRadius: 8, borderWidth: 1, borderColor: 'transparent', marginBottom: 8 },
-  userItemActive: { backgroundColor: '#EEF2FF', borderColor: '#6366F1' },
-  userName: { fontSize: 15, fontWeight: '700', color: '#1E293B' },
-  userNameActive: { color: '#4F46E5' },
-  userRole: { fontSize: 12, color: '#64748B', marginTop: 2, textTransform: 'capitalize' },
-  workloadBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
-  normalWorkload: { backgroundColor: '#DCFCE7' },
-  highWorkload: { backgroundColor: '#FEE2E2' },
-  workloadText: { fontSize: 11, fontWeight: '700', color: '#1E293B' },
-  modalActionsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
-  cancelBtn: { backgroundColor: '#94A3B8' },
-  confirmBtn: { backgroundColor: '#6366F1' },
-  assignLink: { color: '#6366F1', fontWeight: '700', fontSize: 13 }
+  container: { 
+    flex: 1, 
+    backgroundColor: '#020617' 
+  },
+  header: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    padding: 20, 
+    borderBottomWidth: 1, 
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(2, 6, 23, 0.8)',
+  },
+  backBtn: { 
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  backText: { 
+    fontSize: 22, 
+    color: '#F8FAFC',
+    fontWeight: '300'
+  },
+  headerTitle: { 
+    fontSize: 18, 
+    fontWeight: '800', 
+    color: '#F8FAFC', 
+    flex: 1 
+  },
+  content: { 
+    padding: 24 
+  },
+  projectSection: { 
+    marginBottom: 16 
+  },
+  projectLabel: { 
+    fontSize: 10, 
+    color: '#38BDF8', 
+    fontWeight: '800', 
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+  },
+  projectTitle: { 
+    fontSize: 18, 
+    color: '#F8FAFC', 
+    fontWeight: '800',
+    marginTop: 4,
+  },
+  titleRow: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'flex-start', 
+    marginBottom: 16 
+  },
+  taskTitle: { 
+    fontSize: 24, 
+    fontWeight: '900', 
+    color: '#F8FAFC', 
+    flex: 1, 
+    marginRight: 12,
+    lineHeight: 32,
+  },
+  aiBtn: { 
+    backgroundColor: 'rgba(56, 189, 248, 0.15)', 
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.3)',
+  },
+  aiBtnText: {
+    color: '#38BDF8',
+    fontWeight: '800',
+    fontSize: 12,
+  },
+  badgeRow: { 
+    flexDirection: 'row', 
+    marginBottom: 32 
+  },
+  descCard: { 
+    padding: 20, 
+    marginBottom: 32,
+  },
+  sectionLabel: { 
+    fontSize: 12, 
+    fontWeight: '800', 
+    color: '#64748B', 
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  description: { 
+    fontSize: 16, 
+    color: '#CBD5E1', 
+    lineHeight: 26,
+    fontWeight: '400' 
+  },
+  infoGrid: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    marginBottom: 32,
+    gap: 16,
+  },
+  infoItem: { 
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  infoLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  infoLabel: { 
+    fontSize: 10, 
+    color: '#64748B', 
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  assignLink: { 
+    color: '#38BDF8', 
+    fontWeight: '800', 
+    fontSize: 10,
+  },
+  avatarRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center' 
+  },
+  avatarBorder: {
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  infoValue: { 
+    fontSize: 14, 
+    color: '#F8FAFC', 
+    fontWeight: '700',
+    marginLeft: 10,
+  },
+  timeSection: { 
+    paddingTop: 24, 
+    marginBottom: 32,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  timeStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  timeStatItem: {
+    flex: 1,
+  },
+  timeStatLabel: {
+    fontSize: 10,
+    color: '#64748B',
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  timeStatValue: {
+    fontSize: 18,
+    color: '#F8FAFC',
+    fontWeight: '800',
+  },
+  liveTimerText: {
+    fontSize: 18,
+    color: '#38BDF8',
+    fontWeight: '800',
+  },
+  timelineFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  deadlineText: { 
+    fontSize: 12, 
+    color: '#FB7185', 
+    fontWeight: '700' 
+  },
+  trackedText: { 
+    fontSize: 12, 
+    color: '#34D399', 
+    fontWeight: '700' 
+  },
+  actionSection: {
+    marginTop: 20,
+    marginBottom: 40,
+  },
+  actionButtons: { 
+    gap: 12 
+  },
+  dualActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  startBtn: { 
+    backgroundColor: '#38BDF8',
+    height: 56,
+  },
+  pauseIconButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pauseIconText: {
+    fontSize: 18,
+    color: '#F59E0B',
+  },
+  doneBtn: { 
+    backgroundColor: '#34D399',
+    height: 56,
+    flex: 1,
+  },
+  carryOverTrigger: {
+    marginTop: 24,
+    alignItems: 'center',
+  },
+  carryOverText: {
+    fontSize: 14,
+    color: '#64748B',
+    fontWeight: '700',
+    textDecorationLine: 'underline',
+  },
+  modalOverlay: { 
+    flex: 1, 
+    backgroundColor: 'rgba(0,0,0,0.8)', 
+    justifyContent: 'center', 
+    padding: 24 
+  },
+  modalContent: { 
+    backgroundColor: '#0F172A', 
+    padding: 24, 
+    borderRadius: 32,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  modalTitle: { 
+    fontSize: 20, 
+    fontWeight: '800', 
+    color: '#F8FAFC', 
+    marginBottom: 24, 
+    textAlign: 'center' 
+  },
+  userListScroll: {
+    maxHeight: 400,
+  },
+  userItem: { 
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16, 
+    borderRadius: 16, 
+    borderWidth: 1, 
+    borderColor: 'rgba(255, 255, 255, 0.05)', 
+    marginBottom: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+  },
+  userItemActive: { 
+    backgroundColor: 'rgba(56, 189, 248, 0.1)', 
+    borderColor: '#38BDF8' 
+  },
+  userInfo: {
+    flex: 1,
+    marginLeft: 14,
+  },
+  userName: { 
+    fontSize: 16, 
+    fontWeight: '700', 
+    color: '#F8FAFC' 
+  },
+  userNameActive: { 
+    color: '#38BDF8' 
+  },
+  userRole: { 
+    fontSize: 12, 
+    color: '#64748B', 
+    marginTop: 2, 
+    textTransform: 'capitalize' 
+  },
+  workloadBadge: { 
+    paddingHorizontal: 8, 
+    paddingVertical: 4, 
+    borderRadius: 8 
+  },
+  normalWorkload: { 
+    backgroundColor: 'rgba(52, 211, 153, 0.15)' 
+  },
+  highWorkload: { 
+    backgroundColor: 'rgba(251, 113, 133, 0.15)' 
+  },
+  workloadText: { 
+    fontSize: 10, 
+    fontWeight: '800', 
+    color: '#F8FAFC' 
+  },
+  modalActionsRow: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    marginTop: 24,
+    gap: 12,
+  },
+  modalCancelBtn: { 
+    flex: 1,
+    height: 50,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    color: '#94A3B8',
+    fontWeight: '700',
+  },
+  modalConfirmBtn: { 
+    flex: 1,
+    height: 50,
+    borderRadius: 16,
+    backgroundColor: '#38BDF8',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalConfirmText: {
+    color: '#020617',
+    fontWeight: '800',
+  }
 });
+
+export default TaskDetails;
 
 export default TaskDetails;

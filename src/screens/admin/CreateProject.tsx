@@ -271,7 +271,6 @@ const CreateProject = () => {
           placeholder="Brief overview of the project"
           multiline
           numberOfLines={3}
-          style={{ height: 100 }}
           value={formData.description}
           onChangeText={(v) => setFormData({...formData, description: v})}
         />
@@ -342,48 +341,47 @@ const CreateProject = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
-  header: { padding: 24, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
-  title: { fontSize: 24, fontWeight: '800', color: '#1E293B' },
-  subtitle: { fontSize: 14, color: '#64748B', marginTop: 4 },
+  container: { flex: 1, backgroundColor: '#020617' },
+  header: { padding: 24, backgroundColor: '#020617', borderBottomWidth: 1, borderBottomColor: 'rgba(255, 255, 255, 0.1)' },
+  title: { fontSize: 24, fontWeight: '800', color: '#F8FAFC' },
+  subtitle: { fontSize: 14, color: '#94A3B8', marginTop: 4 },
   scrollContent: { padding: 20 },
-  label: { fontSize: 14, fontWeight: '700', color: '#475569', marginBottom: 8, marginTop: 16 },
+  label: { fontSize: 14, fontWeight: '700', color: '#F8FAFC', marginBottom: 8, marginTop: 16 },
   
   // AI Button
   aiButton: { 
-    backgroundColor: '#EEF2FF', 
+    backgroundColor: 'rgba(56, 189, 248, 0.1)', 
     borderWidth: 2, 
-    borderColor: '#6366F1', 
+    borderColor: 'rgba(56, 189, 248, 0.4)', 
     padding: 20, 
-    borderRadius: 16, 
+    borderRadius: 20, 
     marginTop: 12,
-    alignItems: 'center'
+    alignItems: 'center',
+    shadowColor: '#38BDF8',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
   },
-  aiButtonText: { fontSize: 18, fontWeight: '800', color: '#4F46E5' },
-  aiButtonSub: { fontSize: 12, color: '#6366F1', marginTop: 4 },
+  aiButtonText: { fontSize: 18, fontWeight: '800', color: '#38BDF8' },
+  aiButtonSub: { fontSize: 12, color: '#BAE6FD', marginTop: 4 },
 
   divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 24 },
-  line: { flex: 1, height: 1, backgroundColor: '#E2E8F0' },
-  orText: { marginHorizontal: 12, fontSize: 10, fontWeight: '700', color: '#94A3B8' },
+  line: { flex: 1, height: 1, backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+  orText: { marginHorizontal: 12, fontSize: 10, fontWeight: '700', color: '#64748B' },
 
   // Draft Board
   taskCard: { 
-    backgroundColor: '#FFFFFF', 
+    backgroundColor: 'rgba(255, 255, 255, 0.05)', 
     padding: 16, 
-    borderRadius: 12, 
+    borderRadius: 20, 
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   taskHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  taskTitle: { fontSize: 16, fontWeight: '700', color: '#1E293B', flex: 1 },
+  taskTitle: { fontSize: 16, fontWeight: '700', color: '#F8FAFC', flex: 1 },
   deleteBtn: { color: '#EF4444', fontSize: 12, fontWeight: '600' },
-  taskDesc: { fontSize: 14, color: '#64748B', marginTop: 8, lineHeight: 20 },
+  taskDesc: { fontSize: 14, color: '#94A3B8', marginTop: 8, lineHeight: 20 },
   assignLabel: { fontSize: 12, fontWeight: '600', color: '#94A3B8', marginTop: 16, marginBottom: 8 },
   leaderScroll: { flexDirection: 'row' },
   smallLeaderItem: { 
@@ -391,61 +389,62 @@ const styles = StyleSheet.create({
     paddingVertical: 6, 
     borderRadius: 20, 
     borderWidth: 1, 
-    borderColor: '#E2E8F0', 
+    borderColor: 'rgba(255, 255, 255, 0.1)', 
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     marginRight: 8 
   },
-  smallLeaderName: { fontSize: 12, color: '#64748B' },
+  smallLeaderName: { fontSize: 12, color: '#94A3B8' },
   
   leaderList: { marginTop: 8 },
   leaderItem: { 
     padding: 12, 
-    borderRadius: 8, 
+    borderRadius: 12, 
     borderWidth: 1, 
-    borderColor: '#E2E8F0', 
+    borderColor: 'rgba(255, 255, 255, 0.1)', 
     marginBottom: 8,
-    backgroundColor: '#FFFFFF'
+    backgroundColor: 'rgba(255, 255, 255, 0.05)'
   },
-  leaderItemActive: { backgroundColor: '#EEF2FF', borderColor: '#6366F1' },
-  leaderName: { fontSize: 14, color: '#1E293B' },
-  leaderTextActive: { color: '#4F46E5', fontWeight: '700' },
-  submitBtn: { marginTop: 24, backgroundColor: '#4F46E5' },
+  leaderItemActive: { backgroundColor: 'rgba(56, 189, 248, 0.15)', borderColor: '#38BDF8' },
+  leaderName: { fontSize: 14, color: '#94A3B8' },
+  leaderTextActive: { color: '#38BDF8', fontWeight: '700' },
+  submitBtn: { marginTop: 24, backgroundColor: '#38BDF8' },
   cancelBtn: { marginTop: 16, alignItems: 'center' },
-  cancelText: { color: '#64748B', fontSize: 14, fontWeight: '600' },
+  cancelText: { color: '#94A3B8', fontSize: 14, fontWeight: '600' },
   actionSection: { marginTop: 8 },
 
   // Date Selector Styles
   dateSelector: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 8,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
     padding: 14,
     marginTop: 4,
   },
-  dateText: { fontSize: 14, color: '#1E293B' },
-  datePlaceholder: { color: '#94A3B8' },
+  dateText: { fontSize: 14, color: '#F8FAFC' },
+  datePlaceholder: { color: '#64748B' },
 
   // New Draft Styles
-  draftLabel: { fontSize: 12, fontWeight: '800', color: '#6366F1', textTransform: 'uppercase' },
-  draftInputTitle: { fontSize: 16, fontWeight: '700', color: '#1E293B', paddingVertical: 8, marginBottom: 4 },
-  draftInputDesc: { fontSize: 14, color: '#64748B', height: 80, textAlignVertical: 'top', paddingVertical: 8 },
+  draftLabel: { fontSize: 12, fontWeight: '800', color: '#38BDF8', textTransform: 'uppercase' },
+  draftInputTitle: { fontSize: 16, fontWeight: '700', color: '#F8FAFC', paddingVertical: 8, marginBottom: 4 },
+  draftInputDesc: { fontSize: 14, color: '#94A3B8', height: 80, textAlignVertical: 'top', paddingVertical: 8 },
   row: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
   priorityRow: { flexDirection: 'row', marginTop: 4 },
   priorityTag: { 
     paddingHorizontal: 10, 
     paddingVertical: 4, 
-    borderRadius: 6, 
+    borderRadius: 8, 
     borderWidth: 1, 
-    borderColor: '#E2E8F0', 
+    borderColor: 'rgba(255, 255, 255, 0.1)', 
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     marginRight: 8,
-    backgroundColor: '#F8FAFC'
   },
   priorityActive: { borderColor: 'transparent' },
-  priority_low: { backgroundColor: '#DCFCE7' },
-  priority_medium: { backgroundColor: '#FEF9C3' },
-  priority_high: { backgroundColor: '#FEE2E2' },
+  priority_low: { backgroundColor: 'rgba(16, 185, 129, 0.2)', borderColor: '#10B981' },
+  priority_medium: { backgroundColor: 'rgba(245, 158, 11, 0.2)', borderColor: '#F59E0B' },
+  priority_high: { backgroundColor: 'rgba(239, 68, 68, 0.2)', borderColor: '#EF4444' },
   priorityText: { fontSize: 10, fontWeight: '800', color: '#94A3B8' },
-  priorityTextActive: { color: '#1E293B' },
+  priorityTextActive: { color: '#F8FAFC' },
 });
 
 export default CreateProject;

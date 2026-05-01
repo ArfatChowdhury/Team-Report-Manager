@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,25 +8,38 @@ import {
   TouchableOpacity,
   RefreshControl,
   Alert,
-  Animated,
-  PanResponder,
+  Dimensions,
+  ScrollView,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
+import Animated, { 
+  FadeInDown, 
+  FadeInRight,
+  useAnimatedStyle,
+  withSpring,
+  useSharedValue,
+} from 'react-native-reanimated';
 import { RootState } from '../../store';
 import { logOut } from '../../store/slices/authSlice';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
+import Avatar from '../../components/common/Avatar';
+import SkiaDonutChart from '../../components/common/SkiaDonutChart';
+import SkiaStoryBackground from '../../components/common/SkiaStoryBackground';
 import client from '../../api/client';
 import { getAllProjects } from '../../api/projectsApi';
 import { logout } from '../../api/authApi';
+
+const { width } = Dimensions.get('window');
 
 const LeaderDashboard = () => {
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [completedToday, setCompletedToday] = useState(0);
+  const [totalTasks, setTotalTasks] = useState(0);
 
   const navigation = useNavigation<any>();
   const dispatch = useDispatch();
@@ -43,6 +56,7 @@ const LeaderDashboard = () => {
       try {
         const summary = await client.get('/reports/summary');
         setCompletedToday(summary.data.totalCompleted || 0);
+        setTotalTasks(summary.data.totalTasks || 10);
       } catch (_) {}
     } catch (error) {
       console.error('Error fetching leader data:', error);
@@ -58,148 +72,355 @@ const LeaderDashboard = () => {
     }, [])
   );
 
-  const moveProjectCustom = (fromIndex: number, toIndex: number) => {
-    const newList = [...projects];
-    if (toIndex < 0) toIndex = 0;
-    if (toIndex >= newList.length) toIndex = newList.length - 1;
-    
-    const [movedItem] = newList.splice(fromIndex, 1);
-    newList.splice(toIndex, 0, movedItem);
-    setProjects(newList);
+  const getTimeGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 18) return 'Good Afternoon';
+    return 'Good Evening';
   };
 
-  const DraggableProjectItem = ({ item, index }: { item: any; index: number }) => {
-    const pan = React.useRef(new Animated.ValueXY()).current;
-    
-    const panResponder = React.useRef(
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onPanResponderMove: Animated.event([null, { dy: pan.y }], { useNativeDriver: false }),
-        onPanResponderRelease: (e, gestureState) => {
-          // Approximate height of card is ~100px
-          const slotsMoved = Math.round(gestureState.dy / 100);
-          if (slotsMoved !== 0) {
-            moveProjectCustom(index, index + slotsMoved);
-          }
-          Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
-        }
-      })
-    ).current;
-
-    return (
-      <Animated.View 
-        style={[styles.projectCardContainer, { transform: pan.getTranslateTransform(), zIndex: pan.y.interpolate({ inputRange: [-1, 0, 1], outputRange: [10, 1, 10] }) }]}
-      >
+  const renderProjectItem = ({ item, index }: { item: any; index: number }) => (
+    <Animated.View entering={FadeInDown.delay(index * 100).duration(600)}>
+      <TouchableOpacity onPress={() => navigation.navigate('ProjectTasks', { project: item })}>
         <Card style={styles.projectCard}>
-          <View style={styles.reorderCol} {...panResponder.panHandlers}>
-            <Text style={styles.dragHandle}>≡</Text>
-          </View>
-
-          <TouchableOpacity
-            style={styles.projectInfo}
-            onPress={() => navigation.navigate('ProjectTasks', { project: item })}
-          >
+          <View style={styles.projectInfo}>
             <Text style={styles.projectTitle}>{item.title}</Text>
-            <Text style={styles.projectSub}>Tap to manage tasks</Text>
+            <Text style={styles.projectSub}>Tap to manage project tasks</Text>
             {item.deadline && (
-              <Text style={styles.deadline}>
-                Due: {new Date(item.deadline).toLocaleDateString()}
-              </Text>
+              <View style={styles.deadlineRow}>
+                <Text style={styles.deadlineLabel}>Deadline:</Text>
+                <Text style={styles.deadlineValue}>
+                  {new Date(item.deadline).toLocaleDateString()}
+                </Text>
+              </View>
             )}
-          </TouchableOpacity>
-
-          <Badge label="Leader" status="done" />
+          </View>
+          <View style={styles.projectStatus}>
+             <Badge label="Active" status="in-progress" />
+             <Text style={styles.chevron}>→</Text>
+          </View>
         </Card>
-      </Animated.View>
-    );
-  };
+      </TouchableOpacity>
+    </Animated.View>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.welcomeText}>Hello, Leader 👋</Text>
-          <Text style={styles.nameText}>{user?.name}</Text>
-        </View>
-        <TouchableOpacity 
-          onPress={async () => {
-            await logout();
-            dispatch(logOut());
-          }} 
-          style={styles.logoutBtn}
-        >
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
-      </View>
-
-      {loading ? (
-        <Loader visible={true} />
-      ) : (
-        <FlatList
-          data={projects}
-          keyExtractor={(item) => item._id}
-          renderItem={({ item, index }) => <DraggableProjectItem item={item} index={index} />}
-          ListHeaderComponent={
-            <View style={styles.statsContainer}>
-              <Card style={styles.statsCard}>
-                <Text style={styles.statsVal}>{completedToday}</Text>
-                <Text style={styles.statsLabel}>Tasks Done Today</Text>
-              </Card>
-              <Card style={[styles.statsCard, styles.statsCardAccent]}>
-                <Text style={[styles.statsVal, { color: '#fff' }]}>{projects.length}</Text>
-                <Text style={[styles.statsLabel, { color: '#e0e7ff' }]}>My Projects</Text>
-              </Card>
+      <SkiaStoryBackground />
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchData} tintColor="#38BDF8" />}
+      >
+        {/* Header Section */}
+        <Animated.View entering={FadeInDown.duration(800)} style={styles.topHeader}>
+          <View style={styles.profileSection}>
+            <Avatar 
+              name={user?.name || 'L'} 
+              size={50} 
+              style={styles.avatarBorder}
+            />
+            <View style={styles.headerText}>
+              <Text style={styles.timeGreeting}>{getTimeGreeting()}</Text>
+              <Text style={styles.leaderName}>{user?.name?.split(' ')[0]}</Text>
             </View>
-          }
-          contentContainerStyle={styles.listContent}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchData} />}
-          ListEmptyComponent={
+          </View>
+          <TouchableOpacity 
+            onPress={async () => {
+              await logout();
+              dispatch(logOut());
+            }} 
+            style={styles.logoutBtn}
+          >
+            <Text style={styles.logoutText}>Log Out</Text>
+          </TouchableOpacity>
+        </Animated.View>
+
+        {/* Hero Chart Section */}
+        <Animated.View entering={FadeInDown.delay(200).duration(800)}>
+          <Card style={styles.heroCard}>
+            <View style={styles.chartInfo}>
+              <Text style={styles.heroTitle}>Productivity</Text>
+              <Text style={styles.heroSubtitle}>Your team's output today</Text>
+              <View style={styles.heroStats}>
+                <View>
+                  <Text style={styles.heroStatVal}>{completedToday}</Text>
+                  <Text style={styles.heroStatLabel}>Done</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <View>
+                  <Text style={styles.heroStatVal}>{projects.length}</Text>
+                  <Text style={styles.heroStatLabel}>Projects</Text>
+                </View>
+              </View>
+            </View>
+            <View style={styles.chartContainer}>
+              <SkiaDonutChart 
+                percentage={totalTasks > 0 ? (completedToday / totalTasks) : 0} 
+                size={100} 
+                strokeWidth={12} 
+              />
+            </View>
+          </Card>
+        </Animated.View>
+
+        {/* Bento Grid Stats */}
+        <View style={styles.bentoGrid}>
+           <Animated.View entering={FadeInRight.delay(400).duration(800)} style={styles.bentoItemLarge}>
+              <Card style={styles.bentoCard}>
+                 <Text style={styles.bentoIcon}>🎯</Text>
+                 <Text style={styles.bentoVal}>{projects.length}</Text>
+                 <Text style={styles.bentoLabel}>Active Projects</Text>
+              </Card>
+           </Animated.View>
+           <View style={styles.bentoColumn}>
+              <Animated.View entering={FadeInRight.delay(500).duration(800)} style={styles.bentoItemSmall}>
+                <Card style={[styles.bentoCard, { backgroundColor: 'rgba(56, 189, 248, 0.1)' }]}>
+                   <Text style={styles.bentoSmallVal}>{completedToday}</Text>
+                   <Text style={styles.bentoSmallLabel}>Tasks Done</Text>
+                </Card>
+              </Animated.View>
+              <Animated.View entering={FadeInRight.delay(600).duration(800)} style={styles.bentoItemSmall}>
+                <Card style={[styles.bentoCard, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
+                   <Text style={[styles.bentoSmallVal, { color: '#10B981' }]}>100%</Text>
+                   <Text style={styles.bentoSmallLabel}>Efficiency</Text>
+                </Card>
+              </Animated.View>
+           </View>
+        </View>
+
+        {/* Projects List */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>My Projects</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('CreateTask')}>
+            <Text style={styles.viewAll}>+ New Task</Text>
+          </TouchableOpacity>
+        </View>
+
+        {loading ? (
+          <Loader visible={true} />
+        ) : (
+          projects.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>No projects assigned yet.</Text>
             </View>
-          }
-        />
-      )}
+          ) : (
+            projects.map((item, index) => (
+              <React.Fragment key={item._id}>
+                {renderProjectItem({ item, index })}
+              </React.Fragment>
+            ))
+          )
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
-  header: {
+  container: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  scrollContent: {
+    padding: 20,
+  },
+  topHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 24,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    marginBottom: 24,
   },
-  welcomeText: { fontSize: 14, color: '#64748B' },
-  nameText: { fontSize: 20, fontWeight: '800', color: '#1E293B' },
-  logoutBtn: { padding: 8 },
-  logoutText: { color: '#EF4444', fontWeight: '600' },
-  statsContainer: { flexDirection: 'row', padding: 16, gap: 12 },
-  statsCard: { flex: 1, padding: 16, alignItems: 'center' },
-  statsCardAccent: { backgroundColor: '#6366F1' },
-  statsVal: { fontSize: 24, fontWeight: '800', color: '#1E293B' },
-  statsLabel: { fontSize: 12, color: '#64748B', marginTop: 4 },
-  listContent: { padding: 16 },
-  projectCardContainer: { marginBottom: 12 },
-  projectCard: {
+  profileSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    elevation: 2,
   },
-  reorderCol: { marginRight: 16, alignItems: 'center', justifyContent: 'center', padding: 8 },
-  dragHandle: { fontSize: 24, color: '#94A3B8', fontWeight: 'bold' },
-  projectInfo: { flex: 1 },
-  projectTitle: { fontSize: 16, fontWeight: '700', color: '#1E293B' },
-  projectSub: { fontSize: 12, color: '#64748B', marginTop: 2 },
-  deadline: { fontSize: 11, color: '#EF4444', marginTop: 4, fontWeight: '600' },
-  emptyContainer: { alignItems: 'center', marginTop: 80 },
-  emptyText: { color: '#64748B', fontSize: 16 },
+  avatarBorder: {
+    borderWidth: 2,
+    borderColor: '#38BDF8',
+  },
+  headerText: {
+    marginLeft: 14,
+  },
+  timeGreeting: {
+    fontSize: 14,
+    color: '#94A3B8',
+    fontWeight: '500',
+  },
+  leaderName: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#F8FAFC',
+    marginTop: 2,
+  },
+  logoutBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  logoutText: {
+    color: '#E2E8F0',
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  heroCard: {
+    flexDirection: 'row',
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 24,
+    backgroundColor: 'rgba(56, 189, 248, 0.05)',
+    borderColor: 'rgba(56, 189, 248, 0.2)',
+  },
+  chartInfo: {
+    flex: 1,
+  },
+  heroTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#F8FAFC',
+  },
+  heroSubtitle: {
+    fontSize: 12,
+    color: '#94A3B8',
+    marginTop: 4,
+    marginBottom: 16,
+  },
+  heroStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  heroStatVal: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#38BDF8',
+  },
+  heroStatLabel: {
+    fontSize: 10,
+    color: '#94A3B8',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  statDivider: {
+    width: 1,
+    height: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    marginHorizontal: 16,
+  },
+  chartContainer: {
+    marginLeft: 20,
+  },
+  bentoGrid: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 24,
+  },
+  bentoItemLarge: {
+    flex: 1.5,
+  },
+  bentoColumn: {
+    flex: 1,
+    gap: 12,
+  },
+  bentoItemSmall: {
+    flex: 1,
+  },
+  bentoCard: {
+    padding: 16,
+    height: '100%',
+    justifyContent: 'center',
+  },
+  bentoIcon: {
+    fontSize: 24,
+    marginBottom: 8,
+  },
+  bentoVal: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#F8FAFC',
+  },
+  bentoLabel: {
+    fontSize: 12,
+    color: '#94A3B8',
+    marginTop: 4,
+  },
+  bentoSmallVal: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#38BDF8',
+  },
+  bentoSmallLabel: {
+    fontSize: 10,
+    color: '#94A3B8',
+    marginTop: 2,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#F8FAFC',
+  },
+  viewAll: {
+    fontSize: 14,
+    color: '#38BDF8',
+    fontWeight: '600',
+  },
+  projectCard: {
+    flexDirection: 'row',
+    padding: 20,
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  projectInfo: {
+    flex: 1,
+  },
+  projectTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#F8FAFC',
+  },
+  projectSub: {
+    fontSize: 12,
+    color: '#94A3B8',
+    marginTop: 4,
+  },
+  deadlineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  deadlineLabel: {
+    fontSize: 11,
+    color: '#64748B',
+    marginRight: 6,
+  },
+  deadlineValue: {
+    fontSize: 11,
+    color: '#FB7185',
+    fontWeight: '700',
+  },
+  projectStatus: {
+    alignItems: 'flex-end',
+  },
+  chevron: {
+    color: '#334155',
+    fontSize: 20,
+    marginTop: 8,
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: '#64748B',
+    fontSize: 15,
+  },
 });
 
 export default LeaderDashboard;

@@ -126,22 +126,22 @@ const ManageProjects = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  container: { flex: 1, backgroundColor: '#020617' },
   listContent: { padding: 16 },
   projectCard: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   projectInfo: { flex: 1 },
-  projectTitle: { fontSize: 17, fontWeight: '700', color: '#1E293B' },
-  projectLeader: { fontSize: 13, color: '#64748B', marginTop: 4 },
-  leaderName: { color: '#3B82F6', fontWeight: '600' },
-  deadlineText: { fontSize: 11, color: '#EF4444', marginTop: 2, fontWeight: '500' },
+  projectTitle: { fontSize: 17, fontWeight: '700', color: '#F8FAFC' },
+  projectLeader: { fontSize: 13, color: '#94A3B8', marginTop: 4 },
+  leaderName: { color: '#38BDF8', fontWeight: '600' },
+  deadlineText: { fontSize: 11, color: '#FB7185', marginTop: 2, fontWeight: '500' },
   actions: { alignItems: 'flex-end' },
-  editBtn: { paddingVertical: 4, paddingHorizontal: 12, backgroundColor: '#EFF6FF', borderRadius: 6, marginBottom: 6 },
-  editText: { color: '#3B82F6', fontSize: 12, fontWeight: '600' },
-  deleteBtn: { paddingVertical: 4, paddingHorizontal: 12 },
+  editBtn: { paddingVertical: 6, paddingHorizontal: 14, backgroundColor: 'rgba(56, 189, 248, 0.15)', borderRadius: 8, marginBottom: 8, borderWidth: 1, borderColor: 'rgba(56, 189, 248, 0.3)' },
+  editText: { color: '#38BDF8', fontSize: 12, fontWeight: '700' },
+  deleteBtn: { paddingVertical: 4, paddingHorizontal: 14 },
   deleteText: { color: '#EF4444', fontSize: 12, fontWeight: '600' },
-  emptyText: { textAlign: 'center', marginTop: 40, color: '#64748B' },
-  fab: { position: 'absolute', bottom: 24, right: 24, width: 56, height: 56, borderRadius: 28, backgroundColor: '#10B981', justifyContent: 'center', alignItems: 'center', elevation: 5 },
-  fabText: { fontSize: 32, color: '#FFFFFF', fontWeight: '300' },
+  emptyText: { textAlign: 'center', marginTop: 40, color: '#94A3B8' },
+  fab: { position: 'absolute', bottom: 24, right: 24, width: 56, height: 56, borderRadius: 28, backgroundColor: '#38BDF8', justifyContent: 'center', alignItems: 'center', elevation: 8, shadowColor: '#38BDF8', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8 },
+  fabText: { fontSize: 32, color: '#020617', fontWeight: '400' },
 });
 
 export default ManageProjects;

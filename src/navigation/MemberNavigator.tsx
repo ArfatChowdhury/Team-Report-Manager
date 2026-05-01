@@ -9,9 +9,10 @@ const MemberNavigator = () => {
   return (
     <Stack.Navigator 
       screenOptions={{ 
-        headerStyle: { backgroundColor: '#FFFFFF' },
-        headerTintColor: '#1E293B',
+        headerStyle: { backgroundColor: '#020617', borderBottomWidth: 1, borderBottomColor: 'rgba(255, 255, 255, 0.1)' },
+        headerTintColor: '#F8FAFC',
         headerTitleStyle: { fontWeight: '700' },
+        cardStyle: { backgroundColor: '#020617' }
       }}
     >
       <Stack.Screen 

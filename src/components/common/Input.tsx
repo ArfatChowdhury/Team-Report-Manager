@@ -23,10 +23,19 @@ const Input: React.FC<InputProps> = ({
   return (
     <View style={[styles.container, containerStyle]}>
       {label && <Text style={styles.label}>{label}</Text>}
-      <View style={[styles.inputContainer, error ? styles.inputError : null]}>
+      <View style={[
+        styles.inputContainer, 
+        error ? styles.inputError : null,
+        props.multiline ? styles.inputContainerMultiline : null
+      ]}>
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input,
+            props.multiline ? styles.inputMultiline : null,
+            props.style // Allow custom style overrides
+          ]}
           placeholderTextColor="#94A3B8"
+          textAlignVertical={props.multiline ? 'top' : 'center'}
           {...props}
         />
       </View>
@@ -42,23 +51,33 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#475569',
-    marginBottom: 6,
+    fontWeight: '600',
+    color: '#F8FAFC',
+    marginBottom: 8,
     marginLeft: 4,
+    letterSpacing: 0.5,
   },
   inputContainer: {
     height: 52,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
     paddingHorizontal: 16,
     justifyContent: 'center',
   },
+  inputContainerMultiline: {
+    height: 'auto',
+    minHeight: 100,
+    paddingVertical: 12,
+  },
   input: {
     fontSize: 16,
-    color: '#1E293B',
+    color: '#FFFFFF',
+    fontWeight: '500',
+  },
+  inputMultiline: {
+    minHeight: 80,
   },
   inputError: {
     borderColor: '#EF4444',
