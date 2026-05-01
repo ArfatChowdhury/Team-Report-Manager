@@ -10,6 +10,7 @@ import BulkTaskCreation from '../screens/admin/BulkTaskCreation';
 import ProjectTasks from '../screens/leader/ProjectTasks';
 import TaskDetails from '../screens/common/TaskDetails';
 import CreateTask from '../screens/leader/CreateTask';
+import TaskExplorer from '../screens/admin/TaskExplorer';
 
 const Stack = createStackNavigator();
 
@@ -72,6 +73,11 @@ const AdminNavigator = () => {
         name="CreateTask" 
         component={CreateTask} 
         options={{ title: 'New Task' }}
+      />
+      <Stack.Screen 
+        name="TaskExplorer" 
+        component={TaskExplorer} 
+        options={{ title: 'Task Explorer', headerShown: false }}
       />
     </Stack.Navigator>
   );

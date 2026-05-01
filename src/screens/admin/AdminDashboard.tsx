@@ -243,14 +243,20 @@ const AdminDashboard = () => {
                   onPress={() => navigation.navigate('BulkTaskCreation')}
                   delay={500}
                 />
-                <View style={[styles.glassCard, styles.miniStatCard]}>
+                <TouchableOpacity 
+                  onPress={() => navigation.navigate('TaskExplorer', { filter: 'pending' })}
+                  style={[styles.glassCard, styles.miniStatCard]}
+                >
                    <Text style={styles.miniLabel}>Pending</Text>
                    <Text style={[styles.miniVal, { color: '#FBBF24' }]}>{stats.pending}</Text>
-                </View>
-                <View style={[styles.glassCard, styles.miniStatCard, { marginTop: 12 }]}>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  onPress={() => navigation.navigate('TaskExplorer', { filter: 'high' })}
+                  style={[styles.glassCard, styles.miniStatCard, { marginTop: 12 }]}
+                >
                    <Text style={styles.miniLabel}>Urgent</Text>
                    <Text style={[styles.miniVal, { color: '#FB7185' }]}>{stats.highPriorityCount}</Text>
-                </View>
+                </TouchableOpacity>
              </View>
           </View>
 
