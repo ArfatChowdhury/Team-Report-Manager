@@ -12,7 +12,7 @@ import {
 import { useDispatch } from 'react-redux';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
-import WaterRipple from '../../components/common/WaterRipple';
+import GlassBackground from '../../components/common/GlassBackground';
 import { loginWithFirebase } from '../../api/authApi';
 import { setCredentials, setError } from '../../store/slices/authSlice';
 
@@ -72,7 +72,7 @@ const LoginScreen = () => {
 
       {/* BUG FIX 1: WaterRipple lives OUTSIDE KeyboardAvoidingView so it
           anchors to the full screen and doesn't shift when the keyboard opens. */}
-      <WaterRipple />
+      <GlassBackground />
 
       <KeyboardAvoidingView
         style={styles.flex}

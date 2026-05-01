@@ -1,7 +1,8 @@
 import React from 'react';
 import { StyleSheet, Dimensions, View } from 'react-native';
-import { Canvas, Rect, RuntimeShader, Skia, useTouchHandler } from '@shopify/react-native-skia';
+import { Canvas, Rect, RuntimeShader, Skia } from '@shopify/react-native-skia';
 import { useSharedValue, useDerivedValue, useFrameCallback } from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
 const { width, height } = Dimensions.get('window');
 
@@ -94,7 +95,7 @@ vec4 main(vec2 fc) {
 
 const source = Skia.RuntimeEffect.Make(sourceCode);
 if (!source) {
-  throw new Error('[WaterRipple] SkSL shader failed to compile.');
+  console.error('[WaterRipple] SkSL shader failed to compile.');
 }
 
 const RESOLUTION: [number, number] = [width, height];
@@ -104,19 +105,23 @@ const WaterRipple = React.memo(() => {
   const pointerPos = useSharedValue({ x: 10, y: 10 }); 
   const pointerTime = useSharedValue(-10000);
 
-  useFrameCallback((frameInfo) => {
+  const frameCallback = useFrameCallback((frameInfo) => {
     time.value = frameInfo.timestamp;
   });
 
-  const onTouch = useTouchHandler({
-    onStart: ({ x, y }) => {
-      const aspect = width / height;
-      pointerPos.value = { 
-        x: (x / width - 0.5) * aspect, 
-        y: (y / height - 0.5) 
-      };
-      pointerTime.value = time.value;
-    },
+  React.useEffect(() => {
+    frameCallback.setActive(true);
+    return () => frameCallback.setActive(false);
+  }, [frameCallback]);
+
+  const tapGesture = Gesture.Tap().onBegin((e) => {
+    'worklet';
+    const aspect = width / height;
+    pointerPos.value = {
+      x: (e.x / width - 0.5) * aspect,
+      y: (e.y / height - 0.5),
+    };
+    pointerTime.value = time.value;
   });
 
   const uniforms = useDerivedValue(() => ({
@@ -128,11 +133,13 @@ const WaterRipple = React.memo(() => {
 
   return (
     <View style={styles.container}>
-      <Canvas style={styles.canvas} onTouch={onTouch}>
-        <Rect x={0} y={0} width={width} height={height}>
-          <RuntimeShader source={source} uniforms={uniforms} />
-        </Rect>
-      </Canvas>
+      <GestureDetector gesture={tapGesture}>
+        <Canvas style={styles.canvas}>
+          <Rect x={0} y={0} width={width} height={height}>
+            {source && <RuntimeShader source={source} uniforms={uniforms} />}
+          </Rect>
+        </Canvas>
+      </GestureDetector>
       <View style={styles.overlay} />
     </View>
   );

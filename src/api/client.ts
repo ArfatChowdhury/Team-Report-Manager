@@ -9,6 +9,9 @@ const client = axios.create({
   },
 });
 
+console.log('🔌 API Base URL:', API_BASE_URL);
+
+
 // Request Interceptor: Attach Token
 client.interceptors.request.use(
   (config) => {
