@@ -1,79 +1,81 @@
-# Top Team Manager 🚀
+# 🚀 Top Team Manager (Mobile App)
 
-A high-performance, **AI-augmented** project management platform built for modern teams. Featuring a cutting-edge **Next-Gen Dark Glassmorphism** UI, real-time task tracking, and automated roadmap generation.
+A premium, AI-powered team management and reporting platform built with **React Native CLI**. This app is designed for high-performance teams to track operations, generate AI strategies, and dispatch professional reports.
 
-![App Header](https://img.shields.io/badge/UI-OLED_Dark-020617?style=for-the-badge&logo=react)
-![AI](https://img.shields.io/badge/AI-Llama_3.1-38BDF8?style=for-the-badge&logo=meta)
-![Backend](https://img.shields.io/badge/Backend-Vercel_Express-white?style=for-the-badge&logo=vercel)
+## 🔐 Demo Credentials
+| Role | Email | Password |
+| :--- | :--- | :--- |
+| **Admin** | `admin@test.com` | `123456` |
+| **Leader** | `leader@test.com` | `123456` |
+| **Member** | `member@test.com` | `123456` |
 
-## ✨ Premium Features
+---
 
-### 🌌 Next-Gen Glassmorphic UI
-- **OLED Dark Theme**: Deep `#020617` backgrounds with cyan neon accents.
-- **Skia Animations**: Dynamic, ambient background orbs that respond to the app state.
-- **Frosted Overlays**: Premium blur effects on cards and modals for a high-end feel.
+## ✨ Key Features
 
-### 🤖 AI-Powered Roadmap Generator
-- **Intelligent Planning**: Input a project goal, and the Llama 3.1 engine generates a complete set of actionable tasks, descriptions, and priorities.
-- **Bulk Creation**: Launch entire projects with 10+ sub-tasks in a single click.
-- **AI Polish**: Refine roughly written task descriptions into professional requirements.
+### 💎 Premium Glassmorphism UI
+- **Futuristic Dashboards:** Specialized interfaces for Admin, Leader, and Member roles.
+- **Dynamic Feedback:** Real-time productivity charts and donut progress indicators.
+- **Animated Backgrounds:** Immersive Skia-powered backgrounds for a high-end feel.
 
-### ⏱️ Mission Control Dashboard
-- **Live Timers**: Real-time progress tracking down to the second.
-- **Bento Grid Layouts**: High-density information display inspired by modern design systems.
-- **Role-Based Access**: 
-    - **Admin**: System-wide oversight, project creation, and user management.
-    - **Leader**: Team productivity monitoring and task assignment.
-    - **Member**: Focused task execution and status reporting.
+### 🤖 AI Strategy & Writing
+- **AI Roadmap Generator:** Instantly generate structured project tasks from free-text prompts (Groq Llama 3.1).
+- **AI Writing Assistant:** Refine task titles and descriptions to professional standards with one tap.
+- **Draft Board:** Edit and refine AI-suggested tasks before saving them to the pipeline.
 
-## 🛠️ Technology Stack
+### ⏱️ Operations Control
+- **Live Task Tracking:** High-precision timers tracking active tasks down to the second.
+- **Task Explorer:** Admin-only view to deep-dive into "Pending" and "Urgent" operations system-wide.
+- **Strict Workflow:** Controlled task status flow (`Todo` → `In-Progress` → `Pause` → `Done`).
+- **Carry-Over Logic:** Automatically lock original tasks and create duplicates for the next cycle.
 
-- **Frontend**: React Native, Reanimated, Shopify Skia, Redux Toolkit.
-- **Backend**: Node.js, Express, MongoDB (Atlas).
-- **Cloud**: Firebase Auth, Vercel (Deployment).
-- **AI**: Groq Cloud (Llama 3.1 Models).
+### ✉️ AI Report Dispatch
+- **Custom Dispatch Modal:** A cross-platform UI for sending project reports.
+- **Professional Layouts:** Emails include AI-generated executive summaries and structured task tables.
 
-## 🚀 Getting Started
+---
+
+## 🛠️ Tech Stack
+- **Frontend:** React Native CLI (TypeScript)
+- **Styling:** Vanilla CSS + React Native Reanimated (Animations)
+- **Graphics:** Shopify Skia
+- **State Management:** Redux Toolkit
+- **Auth:** Firebase Authentication
+
+---
+
+## 🏗️ Setup & Installation
 
 ### Prerequisites
 - Node.js (v18+)
-- React Native Environment (Android/iOS)
-- Firebase Project configured
+- Android Studio / SDK
+- React Native Environment Setup ([Official Guide](https://reactnative.dev/docs/environment-setup))
 
-### Installation
-
-1. **Clone the repository**
+### Steps
+1. **Clone the repository:**
    ```bash
-   git clone https://github.com/ArfatChowdhury/TeamReportM.git
-   cd TeamReportM
+   git clone https://github.com/ArfatChowdhury/Team-Report-Manager.git
+   cd Team-Report-Manager
    ```
 
-2. **Install Dependencies**
+2. **Install dependencies:**
    ```bash
    npm install
    ```
 
-3. **Configure Environment**
-   Create a `.env` in the root (backend) and configure:
-   - `MONGO_URI`
-   - `FIREBASE_PROJECT_ID`
-   - `GROQ_API_KEY`
+3. **Configure Firebase:**
+   - Place your `google-services.json` in `android/app/`.
 
-4. **Run the App**
+4. **Run the App:**
    ```bash
-   # Terminal 1: Start Metro
-   npx react-native start
-
-   # Terminal 2: Run on Android
    npx react-native run-android
    ```
 
-## 🔐 Emergency Auth Bypass (Demo Only)
-For rapid testing during the demo, the app includes an automatic role-assignment bypass based on email:
-- Email contains `admin` → Admin Dashboard
-- Email contains `leader` → Leader Dashboard
-- Email contains `member` → Member Dashboard
-
 ---
 
-Developed with ❤️ by **Arfat Chowdhury**
+## 📁 Repository Links
+- **Frontend:** [https://github.com/ArfatChowdhury/Team-Report-Manager](https://github.com/ArfatChowdhury/Team-Report-Manager)
+- **Backend:** [https://github.com/ArfatChowdhury/TeamReportM-backend](https://github.com/ArfatChowdhury/TeamReportM-backend)
+
+---
+**Developed by Arfat Chowdhury**
