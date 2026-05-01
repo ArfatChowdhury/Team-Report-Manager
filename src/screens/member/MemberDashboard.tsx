@@ -19,6 +19,7 @@ import Loader from '../../components/common/Loader';
 import { getProjectTasks, updateTaskStatus } from '../../api/tasksApi';
 import { logout } from '../../api/authApi';
 import client from '../../api/client';
+import LiveTimer from '../../components/common/LiveTimer';
 
 const MemberDashboard = () => {
   const [tasks, setTasks] = useState<any[]>([]);
@@ -104,6 +105,14 @@ const MemberDashboard = () => {
           <Text style={styles.priority}>Priority: {item.priority || 'Medium'}</Text>
           {item.dueDate && (
             <Text style={styles.dueDateText}>Due: {new Date(item.dueDate).toLocaleDateString()}</Text>
+          )}
+          {item.status === 'in-progress' && item.allocatedMinutes > 0 && (
+            <LiveTimer 
+              startedAt={item.startedAt} 
+              allocatedMinutes={item.allocatedMinutes} 
+              status={item.status} 
+              style={{ marginTop: 8, fontSize: 12 }} 
+            />
           )}
         </View>
         <View style={styles.statusCol}>

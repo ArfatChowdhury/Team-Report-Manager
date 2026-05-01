@@ -20,11 +20,13 @@ import client from '../../api/client';
 import { getAllUsers } from '../../api/usersApi';
 import { getAllProjects } from '../../api/projectsApi';
 import { logout } from '../../api/authApi';
+import LiveTimer from '../../components/common/LiveTimer';
 import Svg, { Circle, Rect, G, Text as SvgText } from 'react-native-svg';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({ users: 0, projects: 0, tasks: 0, pending: 0, totalTasks: 0, highPriorityCount: 0, overdueProjects: 0 });
   const [dailyRecap, setDailyRecap] = useState({ totalCompleted: 0, totalMinutes: 0 });
+  const [activeTasks, setActiveTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
@@ -37,7 +39,11 @@ const AdminDashboard = () => {
       const users = await getAllUsers();
       const projects = await getAllProjects();
       const summary = await client.get('/reports/summary');
+      const tasksRes = await client.get('/tasks');
       
+      const inProgress = tasksRes.data.filter((t: any) => t.status === 'in-progress');
+      setActiveTasks(inProgress);
+
       setStats({
         users: users.length,
         projects: projects.length,
@@ -173,6 +179,37 @@ const AdminDashboard = () => {
               </View>
             </View>
           </Card>
+
+          {activeTasks.length > 0 && (
+            <>
+              <Text style={styles.sectionTitle}>Currently Active Tasks</Text>
+              {activeTasks.map(task => (
+                <Card key={task._id} style={{ marginBottom: 12, padding: 16 }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 16, fontWeight: '700', color: '#1E293B', marginBottom: 4 }}>
+                        {task.title}
+                      </Text>
+                      <Text style={{ fontSize: 13, color: '#64748B' }}>
+                        👤 {task.assignedTo?.name || 'Unassigned'}
+                      </Text>
+                    </View>
+                    <View style={{ alignItems: 'flex-end' }}>
+                      <Badge label="IN PROGRESS" status="in-progress" />
+                      {task.allocatedMinutes > 0 && (
+                        <LiveTimer 
+                          startedAt={task.startedAt} 
+                          allocatedMinutes={task.allocatedMinutes} 
+                          status={task.status}
+                          style={{ marginTop: 8, fontSize: 12 }} 
+                        />
+                      )}
+                    </View>
+                  </View>
+                </Card>
+              ))}
+            </>
+          )}
 
           <Text style={styles.sectionTitle}>Productivity Chart</Text>
           <Card style={styles.chartCard}>

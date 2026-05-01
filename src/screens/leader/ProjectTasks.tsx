@@ -16,6 +16,7 @@ import Badge from '../../components/common/Badge';
 import Loader from '../../components/common/Loader';
 import { getProjectTasks } from '../../api/tasksApi';
 import client from '../../api/client';
+import LiveTimer from '../../components/common/LiveTimer';
 import { Alert } from 'react-native';
 
 const ProjectTasks = () => {
@@ -143,6 +144,14 @@ const ProjectTasks = () => {
           <Text style={styles.assignee}>Assigned to: {item.assignedTo?.name || 'Unassigned'}</Text>
           {item.dueDate && (
             <Text style={styles.dueDateText}>Due: {new Date(item.dueDate).toLocaleDateString()}</Text>
+          )}
+          {item.status === 'in-progress' && item.allocatedMinutes > 0 && (
+            <LiveTimer 
+              startedAt={item.startedAt} 
+              allocatedMinutes={item.allocatedMinutes} 
+              status={item.status} 
+              style={{ marginTop: 8, fontSize: 12 }} 
+            />
           )}
         </View>
         <Badge 

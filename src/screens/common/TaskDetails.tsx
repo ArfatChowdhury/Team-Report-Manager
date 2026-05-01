@@ -19,6 +19,7 @@ import Button from '../../components/common/Button';
 import { carryOverTask } from '../../api/tasksApi';
 import { getAllUsers } from '../../api/usersApi';
 import client from '../../api/client';
+import LiveTimer from '../../components/common/LiveTimer';
 
 const TaskDetails = () => {
   const navigation = useNavigation<any>();
@@ -31,6 +32,7 @@ const TaskDetails = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [assignModalVisible, setAssignModalVisible] = useState(false);
   const [assignLoading, setAssignLoading] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   const fetchUsers = async () => {
     try {
@@ -41,39 +43,12 @@ const TaskDetails = () => {
     }
   };
 
-  const formatTimeLeft = () => {
-    if (!currentTask.startedAt || !currentTask.allocatedMinutes) return null;
-    const started = new Date(currentTask.startedAt).getTime();
-    const allocatedMs = currentTask.allocatedMinutes * 60000;
-    const deadline = started + allocatedMs;
-    const now = new Date().getTime();
-    const diff = deadline - now;
 
-    if (diff <= 0) return 'Overdue';
-
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-    if (days > 0) return `${days} day ${hours} hours ${minutes} min left`;
-    return `${hours} hours ${minutes} min left`;
-  };
-
-  const [timeLeftStr, setTimeLeftStr] = useState(formatTimeLeft());
-
-  React.useEffect(() => {
-    if (currentTask.status === 'in-progress' && currentTask.allocatedMinutes) {
-      const interval = setInterval(() => {
-        setTimeLeftStr(formatTimeLeft());
-      }, 60000); // update every minute
-      return () => clearInterval(interval);
-    }
-  }, [currentTask.status, currentTask.allocatedMinutes]);
-
-  const handleAssign = async (userId: string) => {
+  const confirmAssign = async () => {
+    if (!selectedUserId) return;
     try {
       setAssignLoading(true);
-      const res = await client.patch(`/tasks/${currentTask._id}`, { assignedTo: userId });
+      const res = await client.patch(`/tasks/${currentTask._id}`, { assignedTo: selectedUserId });
       setCurrentTask(res.data);
       setAssignModalVisible(false);
       Alert.alert('Success', 'Task assigned successfully!');
@@ -81,6 +56,7 @@ const TaskDetails = () => {
       Alert.alert('Error', 'Failed to assign task');
     } finally {
       setAssignLoading(false);
+      setSelectedUserId(null);
     }
   };
 
@@ -234,11 +210,12 @@ const TaskDetails = () => {
               </Text>
             )}
 
-            {currentTask.status === 'in-progress' && timeLeftStr && (
-              <Text style={[styles.timeTrackedValue, { color: timeLeftStr === 'Overdue' ? '#EF4444' : '#F59E0B', fontSize: 16 }]}>
-                ⏳ {timeLeftStr}
-              </Text>
-            )}
+            <LiveTimer 
+              startedAt={currentTask.startedAt} 
+              allocatedMinutes={currentTask.allocatedMinutes} 
+              status={currentTask.status} 
+              style={[styles.timeTrackedValue, { fontSize: 16 }]}
+            />
 
             {currentTask.startedAt && (
               <Text style={styles.timeValue}>Started: {new Date(currentTask.startedAt).toLocaleDateString()}</Text>
@@ -288,33 +265,50 @@ const TaskDetails = () => {
         visible={assignModalVisible}
         transparent
         animationType="slide"
-        onRequestClose={() => setAssignModalVisible(false)}
+        onRequestClose={() => {
+          setAssignModalVisible(false);
+          setSelectedUserId(null);
+        }}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Assign Task To</Text>
-            {users.map((u: any) => (
-              <TouchableOpacity 
-                key={u._id} 
-                style={styles.userItem}
-                onPress={() => handleAssign(u._id)}
-              >
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <View>
-                    <Text style={styles.userName}>{u.name}</Text>
-                    <Text style={styles.userRole}>{u.role}</Text>
+            <ScrollView style={{ maxHeight: 300, marginBottom: 16 }} showsVerticalScrollIndicator={false}>
+              {users.map((u: any) => (
+                <TouchableOpacity 
+                  key={u._id} 
+                  style={[styles.userItem, selectedUserId === u._id && styles.userItemActive]}
+                  onPress={() => setSelectedUserId(u._id)}
+                  disabled={assignLoading}
+                >
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <View>
+                      <Text style={[styles.userName, selectedUserId === u._id && styles.userNameActive]}>{u.name}</Text>
+                      <Text style={styles.userRole}>{u.role}</Text>
+                    </View>
+                    <View style={[styles.workloadBadge, u.activeTasks > 5 ? styles.highWorkload : styles.normalWorkload]}>
+                      <Text style={styles.workloadText}>{u.activeTasks || 0} tasks</Text>
+                    </View>
                   </View>
-                  <View style={[styles.workloadBadge, u.activeTasks > 5 ? styles.highWorkload : styles.normalWorkload]}>
-                    <Text style={styles.workloadText}>{u.activeTasks || 0} tasks</Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            ))}
-            <Button 
-              title="Cancel" 
-              onPress={() => setAssignModalVisible(false)} 
-              style={styles.cancelBtn} 
-            />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <View style={styles.modalActionsRow}>
+              <Button 
+                title="Cancel" 
+                onPress={() => {
+                  setAssignModalVisible(false);
+                  setSelectedUserId(null);
+                }} 
+                style={[styles.cancelBtn, { flex: 1, marginRight: 8 }]} 
+              />
+              <Button 
+                title={assignLoading ? "Assigning..." : "Confirm"} 
+                onPress={confirmAssign}
+                disabled={!selectedUserId || assignLoading} 
+                style={[styles.confirmBtn, { flex: 1, marginLeft: 8 }, (!selectedUserId || assignLoading) && { opacity: 0.5 }]} 
+              />
+            </View>
           </View>
         </View>
       </Modal>
@@ -350,19 +344,23 @@ const styles = StyleSheet.create({
   startBtn: { backgroundColor: '#3B82F6' },
   pauseBtn: { backgroundColor: '#F59E0B' },
   doneBtn: { backgroundColor: '#10B981' },
-  carryOverBtn: { marginTop: 24, backgroundColor: '#6366F1' },
-  assignLink: { color: '#6366F1', fontWeight: '700', fontSize: 13 },
+  carryOverBtn: { backgroundColor: '#F59E0B', marginTop: 12 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
-  modalContent: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 24 },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: '#1E293B', marginBottom: 20, textAlign: 'center' },
-  userItem: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
-  userName: { fontSize: 16, fontWeight: '600', color: '#1E293B' },
-  userRole: { fontSize: 12, color: '#64748B', textTransform: 'capitalize' },
+  modalContent: { backgroundColor: '#FFFFFF', padding: 24, borderRadius: 16 },
+  modalTitle: { fontSize: 18, fontWeight: '800', color: '#1E293B', marginBottom: 16, textAlign: 'center' },
+  userItem: { padding: 16, borderBottomWidth: 1, borderBottomColor: '#F1F5F9', borderRadius: 8, borderWidth: 1, borderColor: 'transparent', marginBottom: 8 },
+  userItemActive: { backgroundColor: '#EEF2FF', borderColor: '#6366F1' },
+  userName: { fontSize: 15, fontWeight: '700', color: '#1E293B' },
+  userNameActive: { color: '#4F46E5' },
+  userRole: { fontSize: 12, color: '#64748B', marginTop: 2, textTransform: 'capitalize' },
   workloadBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
+  normalWorkload: { backgroundColor: '#DCFCE7' },
   highWorkload: { backgroundColor: '#FEE2E2' },
-  normalWorkload: { backgroundColor: '#F1F5F9' },
-  workloadText: { fontSize: 11, fontWeight: '700', color: '#64748B' },
-  cancelBtn: { marginTop: 20, backgroundColor: '#F1F5F9' },
+  workloadText: { fontSize: 11, fontWeight: '700', color: '#1E293B' },
+  modalActionsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
+  cancelBtn: { backgroundColor: '#94A3B8' },
+  confirmBtn: { backgroundColor: '#6366F1' },
+  assignLink: { color: '#6366F1', fontWeight: '700', fontSize: 13 }
 });
 
 export default TaskDetails;
