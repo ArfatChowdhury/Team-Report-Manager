@@ -673,5 +673,3 @@ const styles = StyleSheet.create({
 });
 
 export default TaskDetails;
-
-export default TaskDetails;

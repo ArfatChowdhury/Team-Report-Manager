@@ -3,8 +3,7 @@ import {
   View, 
   Text, 
   StyleSheet, 
-  SafeAreaView, 
-  ScrollView, 
+  ScrollView,
   TouchableOpacity,
   RefreshControl,
   Share,
@@ -12,6 +11,7 @@ import {
   Alert,
   Pressable
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store';
@@ -152,8 +152,9 @@ const AdminDashboard = () => {
       <Loader visible={loading} />
       {!loading && (
         <ScrollView 
+          style={{ flex: 1 }}
           contentContainerStyle={styles.scrollContent}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FFFFFF" />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#38BDF8" />}
         >
           {/* Futuristic Header */}
           <View style={styles.topHeader}>
@@ -166,9 +167,6 @@ const AdminDashboard = () => {
             </Animated.View>
             
             <View style={styles.headerActions}>
-               <TouchableOpacity onPress={handleWipeout} style={styles.wipeoutBtn}>
-                  <Text style={styles.wipeoutText}>Wipeout</Text>
-               </TouchableOpacity>
                <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
                   <Text style={styles.logoutText}>Log Out</Text>
                </TouchableOpacity>
@@ -305,6 +303,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
+    paddingBottom: 100,
   },
   glassCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
@@ -458,27 +457,27 @@ const styles = StyleSheet.create({
     width: '48%',
   },
   actionCard: {
-    padding: 20,
-    marginBottom: 16,
+    padding: 14,
+    marginBottom: 12,
   },
   iconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 36,
+    height: 36,
+    borderRadius: 12,
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   actionTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
     color: '#F8FAFC',
   },
   actionDesc: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#94A3B8',
-    marginTop: 2,
+    marginTop: 1,
   },
   miniStatCard: {
     padding: 16,

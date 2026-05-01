@@ -3,22 +3,19 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
-  FlatList,
   TouchableOpacity,
   RefreshControl,
   Alert,
   Dimensions,
   ScrollView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import Animated, { 
   FadeInDown, 
   FadeInRight,
-  useAnimatedStyle,
-  withSpring,
-  useSharedValue,
+  FadeInUp
 } from 'react-native-reanimated';
 import { RootState } from '../../store';
 import { logOut } from '../../store/slices/authSlice';
@@ -35,6 +32,7 @@ import { logout } from '../../api/authApi';
 const { width } = Dimensions.get('window');
 
 const LeaderDashboard = () => {
+  const insets = useSafeAreaInsets();
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -55,8 +53,8 @@ const LeaderDashboard = () => {
 
       try {
         const summary = await client.get('/reports/summary');
-        setCompletedToday(summary.data.totalCompleted || 0);
-        setTotalTasks(summary.data.totalTasks || 10);
+        setCompletedToday(summary.data.totalCompletedToday || 0);
+        setTotalTasks(summary.data.totalTasks || 0);
       } catch (_) {}
     } catch (error) {
       console.error('Error fetching leader data:', error);
@@ -79,8 +77,17 @@ const LeaderDashboard = () => {
     return 'Good Evening';
   };
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      dispatch(logOut());
+    } catch (error) {
+      dispatch(logOut());
+    }
+  };
+
   const renderProjectItem = ({ item, index }: { item: any; index: number }) => (
-    <Animated.View entering={FadeInDown.delay(index * 100).duration(600)}>
+    <Animated.View key={item._id} entering={FadeInDown.delay(index * 100).duration(600)}>
       <TouchableOpacity onPress={() => navigation.navigate('ProjectTasks', { project: item })}>
         <Card style={styles.projectCard}>
           <View style={styles.projectInfo}>
@@ -105,124 +112,115 @@ const LeaderDashboard = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <SkiaStoryBackground />
-      <ScrollView 
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchData} tintColor="#38BDF8" />}
-      >
-        {/* Header Section */}
-        <Animated.View entering={FadeInDown.duration(800)} style={styles.topHeader}>
-          <View style={styles.profileSection}>
-            <Avatar 
-              name={user?.name || 'L'} 
-              size={50} 
-              style={styles.avatarBorder}
-            />
-            <View style={styles.headerText}>
-              <Text style={styles.timeGreeting}>{getTimeGreeting()}</Text>
-              <Text style={styles.leaderName}>{user?.name?.split(' ')[0]}</Text>
-            </View>
-          </View>
-          <TouchableOpacity 
-            onPress={async () => {
-              await logout();
-              dispatch(logOut());
-            }} 
-            style={styles.logoutBtn}
-          >
-            <Text style={styles.logoutText}>Log Out</Text>
-          </TouchableOpacity>
-        </Animated.View>
-
-        {/* Hero Chart Section */}
-        <Animated.View entering={FadeInDown.delay(200).duration(800)}>
-          <Card style={styles.heroCard}>
-            <View style={styles.chartInfo}>
-              <Text style={styles.heroTitle}>Productivity</Text>
-              <Text style={styles.heroSubtitle}>Your team's output today</Text>
-              <View style={styles.heroStats}>
-                <View>
-                  <Text style={styles.heroStatVal}>{completedToday}</Text>
-                  <Text style={styles.heroStatLabel}>Done</Text>
-                </View>
-                <View style={styles.statDivider} />
-                <View>
-                  <Text style={styles.heroStatVal}>{projects.length}</Text>
-                  <Text style={styles.heroStatLabel}>Projects</Text>
-                </View>
+      <Loader visible={loading} />
+      
+      {!loading && (
+        <ScrollView 
+          style={{ flex: 1 }}
+          contentContainerStyle={[
+            styles.scrollContent, 
+            { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 100 }
+          ]}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={fetchData} tintColor="#38BDF8" />}
+        >
+          {/* Header Section */}
+          <Animated.View entering={FadeInDown.duration(800)} style={styles.topHeader}>
+            <View style={styles.profileSection}>
+              <Avatar name={user?.name || 'L'} size={50} style={styles.avatarBorder} />
+              <View style={styles.headerText}>
+                <Text style={styles.timeGreeting}>{getTimeGreeting()}</Text>
+                <Text style={styles.leaderName}>{user?.name?.split(' ')[0]}</Text>
               </View>
             </View>
-            <View style={styles.chartContainer}>
-              <SkiaDonutChart 
-                percentage={totalTasks > 0 ? (completedToday / totalTasks) : 0} 
-                size={100} 
-                strokeWidth={12} 
-              />
-            </View>
-          </Card>
-        </Animated.View>
+            <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}>
+              <Text style={styles.logoutText}>Log Out</Text>
+            </TouchableOpacity>
+          </Animated.View>
 
-        {/* Bento Grid Stats */}
-        <View style={styles.bentoGrid}>
-           <Animated.View entering={FadeInRight.delay(400).duration(800)} style={styles.bentoItemLarge}>
+          {/* Productivity Hero Card */}
+          <Animated.View entering={FadeInDown.delay(200).duration(800)}>
+            <Card style={styles.heroCard}>
+              <View style={styles.chartInfo}>
+                <Text style={styles.heroTitle}>Productivity</Text>
+                <Text style={styles.heroSubtitle}>Your team's output today</Text>
+                <View style={styles.heroStats}>
+                  <View>
+                    <Text style={styles.heroStatVal}>{completedToday}</Text>
+                    <Text style={styles.heroStatLabel}>Done</Text>
+                  </View>
+                  <View style={styles.statDivider} />
+                  <View>
+                    <Text style={styles.heroStatVal}>{projects.length}</Text>
+                    <Text style={styles.heroStatLabel}>Projects</Text>
+                  </View>
+                </View>
+              </View>
+              <View style={styles.chartContainer}>
+                <SkiaDonutChart 
+                  percentage={totalTasks > 0 ? (completedToday / totalTasks) : 0} 
+                  size={90} 
+                  strokeWidth={10} 
+                />
+              </View>
+            </Card>
+          </Animated.View>
+
+          {/* Bento Stats Grid */}
+          <View style={styles.bentoGrid}>
+            <Animated.View entering={FadeInRight.delay(400).duration(800)} style={styles.bentoItemLarge}>
               <Card style={styles.bentoCard}>
-                 <Text style={styles.bentoIcon}>🎯</Text>
-                 <Text style={styles.bentoVal}>{projects.length}</Text>
-                 <Text style={styles.bentoLabel}>Active Projects</Text>
+                <Text style={styles.bentoIcon}>🎯</Text>
+                <Text style={styles.bentoVal}>{projects.length}</Text>
+                <Text style={styles.bentoLabel}>Active Projects</Text>
               </Card>
-           </Animated.View>
-           <View style={styles.bentoColumn}>
-              <Animated.View entering={FadeInRight.delay(500).duration(800)} style={styles.bentoItemSmall}>
+            </Animated.View>
+            <View style={styles.bentoColumn}>
+              <Animated.View entering={FadeInUp.delay(500).duration(800)} style={styles.bentoItemSmall}>
                 <Card style={[styles.bentoCard, { backgroundColor: 'rgba(56, 189, 248, 0.1)' }]}>
-                   <Text style={styles.bentoSmallVal}>{completedToday}</Text>
-                   <Text style={styles.bentoSmallLabel}>Tasks Done</Text>
+                  <Text style={styles.bentoSmallVal}>{completedToday}</Text>
+                  <Text style={styles.bentoSmallLabel}>Tasks Done</Text>
                 </Card>
               </Animated.View>
-              <Animated.View entering={FadeInRight.delay(600).duration(800)} style={styles.bentoItemSmall}>
+              <Animated.View entering={FadeInUp.delay(600).duration(800)} style={styles.bentoItemSmall}>
                 <Card style={[styles.bentoCard, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
-                   <Text style={[styles.bentoSmallVal, { color: '#10B981' }]}>100%</Text>
-                   <Text style={styles.bentoSmallLabel}>Efficiency</Text>
+                  <Text style={[styles.bentoSmallVal, { color: '#10B981' }]}>100%</Text>
+                  <Text style={styles.bentoSmallLabel}>Efficiency</Text>
                 </Card>
               </Animated.View>
-           </View>
-        </View>
+            </View>
+          </View>
 
-        {/* Projects List */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>My Projects</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('CreateTask')}>
-            <Text style={styles.viewAll}>+ New Task</Text>
-          </TouchableOpacity>
-        </View>
+          {/* Projects List */}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>My Projects</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('CreateProject')}>
+              <Text style={styles.viewAll}>+ New Project</Text>
+            </TouchableOpacity>
+          </View>
 
-        {loading ? (
-          <Loader visible={true} />
-        ) : (
-          projects.length === 0 ? (
+          {projects.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>No projects assigned yet.</Text>
             </View>
           ) : (
-            projects.map((item, index) => (
-              <React.Fragment key={item._id}>
-                {renderProjectItem({ item, index })}
-              </React.Fragment>
-            ))
-          )
-        )}
-      </ScrollView>
-    </SafeAreaView>
+            projects.map((item, index) => renderProjectItem({ item, index }))
+          )}
+        </ScrollView>
+      )}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: '#020617',
   },
   scrollContent: {
     padding: 20,
+    paddingBottom: 100,
   },
   topHeader: {
     flexDirection: 'row',
@@ -267,7 +265,7 @@ const styles = StyleSheet.create({
   },
   heroCard: {
     flexDirection: 'row',
-    padding: 24,
+    padding: 20,
     alignItems: 'center',
     marginBottom: 24,
     backgroundColor: 'rgba(56, 189, 248, 0.05)',
@@ -309,51 +307,52 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
   },
   chartContainer: {
-    marginLeft: 20,
+    marginLeft: 16,
   },
   bentoGrid: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 24,
+    gap: 10,
+    marginBottom: 20,
+    height: 120,
   },
   bentoItemLarge: {
-    flex: 1.5,
+    flex: 1.2,
   },
   bentoColumn: {
     flex: 1,
-    gap: 12,
+    gap: 10,
   },
   bentoItemSmall: {
     flex: 1,
   },
   bentoCard: {
-    padding: 16,
+    padding: 12,
     height: '100%',
     justifyContent: 'center',
   },
   bentoIcon: {
-    fontSize: 24,
-    marginBottom: 8,
+    fontSize: 20,
+    marginBottom: 4,
   },
   bentoVal: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '800',
     color: '#F8FAFC',
   },
   bentoLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#94A3B8',
-    marginTop: 4,
+    marginTop: 2,
   },
   bentoSmallVal: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '800',
     color: '#38BDF8',
   },
   bentoSmallLabel: {
-    fontSize: 10,
+    fontSize: 9,
     color: '#94A3B8',
-    marginTop: 2,
+    marginTop: 1,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -373,7 +372,7 @@ const styles = StyleSheet.create({
   },
   projectCard: {
     flexDirection: 'row',
-    padding: 20,
+    padding: 16,
     marginBottom: 12,
     alignItems: 'center',
   },

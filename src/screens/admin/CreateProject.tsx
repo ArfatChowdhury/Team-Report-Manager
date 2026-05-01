@@ -426,8 +426,8 @@ const styles = StyleSheet.create({
 
   // New Draft Styles
   draftLabel: { fontSize: 12, fontWeight: '800', color: '#38BDF8', textTransform: 'uppercase' },
-  draftInputTitle: { fontSize: 16, fontWeight: '700', color: '#F8FAFC', paddingVertical: 8, marginBottom: 4 },
-  draftInputDesc: { fontSize: 14, color: '#94A3B8', height: 80, textAlignVertical: 'top', paddingVertical: 8 },
+  draftInputTitle: { fontSize: 16, fontWeight: '700', color: '#F8FAFC' },
+  draftInputDesc: { fontSize: 14, color: '#94A3B8' },
   row: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
   priorityRow: { flexDirection: 'row', marginTop: 4 },
   priorityTag: { 

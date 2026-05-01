@@ -67,8 +67,12 @@ const ProjectTasks = () => {
         description: project.description
       });
       
-      const tasks = response.data;
-      const editableTasks = tasks.map((t: string, i: number) => ({ id: i.toString(), title: t }));
+      const suggestedData = response.data;
+      // Handle both string array (old) and object array (new)
+      const editableTasks = suggestedData.map((t: any, i: number) => ({ 
+        id: i.toString(), 
+        title: typeof t === 'string' ? t : (t.title || 'Untitled Task')
+      }));
       setSuggestedTasks(editableTasks);
       setReviewModalVisible(true);
     } catch (error) {
@@ -78,34 +82,30 @@ const ProjectTasks = () => {
     }
   };
 
-  const handleEmailReport = async () => {
-    Alert.prompt(
-      'Send Email Report',
-      'Enter recipient email address:',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Send', 
-          onPress: async (email) => {
-            if (!email) return;
-            try {
-              setLoading(true);
-              await client.post('/reports/email-report', {
-                to: email,
-                projectTitle: project.title,
-                tasks: tasks 
-              });
-              Alert.alert('Success', 'AI Report sent successfully!');
-            } catch (err) {
-              Alert.alert('Error', 'Failed to send email report');
-            } finally {
-              setLoading(false);
-            }
-          }
-        }
-      ],
-      'plain-text'
-    );
+  const [emailModalVisible, setEmailModalVisible] = useState(false);
+  const [recipientEmail, setRecipientEmail] = useState('');
+
+  const handleSendEmail = async () => {
+    if (!recipientEmail) return;
+    try {
+      setLoading(true);
+      setEmailModalVisible(false);
+      await client.post('/reports/email-report', {
+        to: recipientEmail,
+        projectTitle: project.title,
+        tasks: tasks 
+      });
+      Alert.alert('Success', 'AI Report sent successfully!');
+    } catch (err) {
+      Alert.alert('Error', 'Failed to send email report');
+    } finally {
+      setLoading(false);
+      setRecipientEmail('');
+    }
+  };
+
+  const handleEmailReport = () => {
+    setEmailModalVisible(true);
   };
 
   const handleSaveAITasks = async () => {
@@ -272,6 +272,45 @@ const ProjectTasks = () => {
               </TouchableOpacity>
             </View>
           </View>
+        </View>
+      </Modal>
+      
+      <Modal
+        visible={emailModalVisible}
+        transparent
+        animationType="fade"
+      >
+        <View style={styles.modalOverlay}>
+          <Animated.View entering={FadeInUp.duration(400)} style={styles.emailModalContent}>
+            <Text style={styles.modalTitle}>AI Report Dispatch</Text>
+            <Text style={styles.modalSub}>Enter recipient email address</Text>
+            
+            <TextInput
+              style={styles.emailInput}
+              placeholder="e.g. client@example.com"
+              placeholderTextColor="#64748B"
+              value={recipientEmail}
+              onChangeText={setRecipientEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+            
+            <View style={styles.modalFooterRow}>
+              <TouchableOpacity 
+                onPress={() => setEmailModalVisible(false)} 
+                style={styles.cancelBtn}
+              >
+                <Text style={styles.cancelBtnText}>Abort</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                onPress={handleSendEmail}
+                disabled={!recipientEmail} 
+                style={[styles.dispatchBtn, !recipientEmail && { opacity: 0.5 }]}
+              >
+                <Text style={styles.dispatchBtnText}>Send Report</Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
         </View>
       </Modal>
     </SafeAreaView>
@@ -527,6 +566,51 @@ const styles = StyleSheet.create({
     color: '#020617', 
     fontSize: 16, 
     fontWeight: '800' 
+  },
+  emailModalContent: {
+    backgroundColor: '#0F172A',
+    padding: 24,
+    borderRadius: 32,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    width: '100%',
+  },
+  emailInput: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 16,
+    padding: 16,
+    color: '#F8FAFC',
+    fontSize: 16,
+    marginTop: 20,
+    marginBottom: 24,
+  },
+  modalFooterRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  cancelBtn: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    alignItems: 'center',
+  },
+  cancelBtnText: {
+    color: '#94A3B8',
+    fontWeight: '700',
+  },
+  dispatchBtn: {
+    flex: 2,
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: '#38BDF8',
+    alignItems: 'center',
+  },
+  dispatchBtnText: {
+    color: '#020617',
+    fontWeight: '800',
   },
 });
 
