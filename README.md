@@ -1,69 +1,79 @@
-# Team Report Manager (Hiring Assessment)
+# Top Team Manager 🚀
 
-A professional React Native CLI application for enterprise team management. This system enforces a strict three-tier role hierarchy (Admin, Leader, Member) and features AI-assisted task generation, real-time reporting, and automated email summaries.
+A high-performance, **AI-augmented** project management platform built for modern teams. Featuring a cutting-edge **Next-Gen Dark Glassmorphism** UI, real-time task tracking, and automated roadmap generation.
 
-## 🚀 Key Features
-- **Role-Based Dashboards**: Customized experiences for Admins, Leaders, and Members.
-- **AI Planning (Groq Llama-3)**: Generate structured task lists from free-text prompts.
-- **Visual Analytics**: Custom SVG charts (Donut/Bar) for productivity tracking.
-- **Email Reporting**: AI-generated HTML reports with task tables sent via SMTP.
-- **Time Tracking**: Automatic calculation of work minutes per task.
-- **Task Locking**: Locked carry-over logic to preserve project history.
+![App Header](https://img.shields.io/badge/UI-OLED_Dark-020617?style=for-the-badge&logo=react)
+![AI](https://img.shields.io/badge/AI-Llama_3.1-38BDF8?style=for-the-badge&logo=meta)
+![Backend](https://img.shields.io/badge/Backend-Vercel_Express-white?style=for-the-badge&logo=vercel)
 
-## 🛠 Tech Stack
-- **Frontend**: React Native CLI, Redux Toolkit, React Navigation, SVG.
-- **Backend**: Node.js, Express, MongoDB, Firebase Auth.
-- **AI Service**: Groq API (Llama-3-70B & 8B).
-- **Persistence**: AsyncStorage for offline-first session recovery.
+## ✨ Premium Features
+
+### 🌌 Next-Gen Glassmorphic UI
+- **OLED Dark Theme**: Deep `#020617` backgrounds with cyan neon accents.
+- **Skia Animations**: Dynamic, ambient background orbs that respond to the app state.
+- **Frosted Overlays**: Premium blur effects on cards and modals for a high-end feel.
+
+### 🤖 AI-Powered Roadmap Generator
+- **Intelligent Planning**: Input a project goal, and the Llama 3.1 engine generates a complete set of actionable tasks, descriptions, and priorities.
+- **Bulk Creation**: Launch entire projects with 10+ sub-tasks in a single click.
+- **AI Polish**: Refine roughly written task descriptions into professional requirements.
+
+### ⏱️ Mission Control Dashboard
+- **Live Timers**: Real-time progress tracking down to the second.
+- **Bento Grid Layouts**: High-density information display inspired by modern design systems.
+- **Role-Based Access**: 
+    - **Admin**: System-wide oversight, project creation, and user management.
+    - **Leader**: Team productivity monitoring and task assignment.
+    - **Member**: Focused task execution and status reporting.
+
+## 🛠️ Technology Stack
+
+- **Frontend**: React Native, Reanimated, Shopify Skia, Redux Toolkit.
+- **Backend**: Node.js, Express, MongoDB (Atlas).
+- **Cloud**: Firebase Auth, Vercel (Deployment).
+- **AI**: Groq Cloud (Llama 3.1 Models).
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js (v18+)
+- React Native Environment (Android/iOS)
+- Firebase Project configured
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/ArfatChowdhury/TeamReportM.git
+   cd TeamReportM
+   ```
+
+2. **Install Dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Configure Environment**
+   Create a `.env` in the root (backend) and configure:
+   - `MONGO_URI`
+   - `FIREBASE_PROJECT_ID`
+   - `GROQ_API_KEY`
+
+4. **Run the App**
+   ```bash
+   # Terminal 1: Start Metro
+   npx react-native start
+
+   # Terminal 2: Run on Android
+   npx react-native run-android
+   ```
+
+## 🔐 Emergency Auth Bypass (Demo Only)
+For rapid testing during the demo, the app includes an automatic role-assignment bypass based on email:
+- Email contains `admin` → Admin Dashboard
+- Email contains `leader` → Leader Dashboard
+- Email contains `member` → Member Dashboard
 
 ---
 
-## ⚙️ Setup Instructions
-
-### 1. Backend Setup
-```bash
-cd f:/TeamReportM-backend
-npm install
-# Configure your .env (see sample below)
-npm run seed  # Populate demo data
-npm start
-```
-
-#### Backend `.env` Requirements:
-```text
-PORT=5000
-MONGO_URI=your_mongodb_uri
-GROQ_API_KEY=your_groq_key
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your_email
-SMTP_PASS=your_app_password
-```
-
-### 2. Mobile App Setup
-```bash
-cd f:/TeamReportM
-npm install
-# Ensure Android Emulator is running
-npm run android
-```
-
----
-
-## 🔐 Demo Credentials
-| Role | Email | Password |
-|---|---|---|
-| **Admin** | `admin@test.com` | `password123` |
-| **Leader** | `leader@test.com` | `password123` |
-| **Member** | `member@test.com` | `password123` |
-
----
-
-## 📊 Evaluation Highlights
-- **Security**: Granular role enforcement via server-side middleware.
-- **Clean Code**: Modular Redux architecture and component-driven UI.
-- **UX**: Professional glassmorphism design with responsive charts.
-- **AI**: Seamless integration of Llama-3 for project management efficiency.
-
----
-*Created by [Your Name] for the Hiring Assessment (May 2026).*
+Developed with ❤️ by **Arfat Chowdhury**
