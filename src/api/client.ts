@@ -2,14 +2,17 @@ import axios from 'axios';
 import { API_BASE_URL } from '@env';
 import { store } from '../store';
 
+// Temporarily hardcoding to bypass Metro cache issues
+const VERCEL_URL = 'https://team-report-m-backend.vercel.app/api';
+
 const client = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: VERCEL_URL,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-console.log('🔌 API Base URL:', API_BASE_URL);
+console.log('🔌 FORCED API URL:', VERCEL_URL);
 
 
 // Request Interceptor: Attach Token

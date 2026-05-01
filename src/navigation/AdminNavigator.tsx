@@ -7,6 +7,9 @@ import ManageProjects from '../screens/admin/ManageProjects';
 import CreateProject from '../screens/admin/CreateProject';
 import EditProject from '../screens/admin/EditProject';
 import BulkTaskCreation from '../screens/admin/BulkTaskCreation';
+import ProjectTasks from '../screens/leader/ProjectTasks';
+import TaskDetails from '../screens/common/TaskDetails';
+import CreateTask from '../screens/leader/CreateTask';
 
 const Stack = createStackNavigator();
 
@@ -53,6 +56,21 @@ const AdminNavigator = () => {
         name="EditProject" 
         component={EditProject} 
         options={{ title: 'Edit Project' }}
+      />
+      <Stack.Screen 
+        name="ProjectTasks" 
+        component={ProjectTasks} 
+        options={{ title: 'Project Tasks' }}
+      />
+      <Stack.Screen 
+        name="TaskDetails" 
+        component={TaskDetails} 
+        options={{ title: 'Task Details' }}
+      />
+      <Stack.Screen 
+        name="CreateTask" 
+        component={CreateTask} 
+        options={{ title: 'New Task' }}
       />
     </Stack.Navigator>
   );

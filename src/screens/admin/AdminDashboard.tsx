@@ -23,7 +23,7 @@ import { logout } from '../../api/authApi';
 import Svg, { Circle, Rect, G, Text as SvgText } from 'react-native-svg';
 
 const AdminDashboard = () => {
-  const [stats, setStats] = useState({ users: 0, projects: 0, tasks: 0 });
+  const [stats, setStats] = useState({ users: 0, projects: 0, tasks: 0, pending: 0, totalTasks: 0, highPriorityCount: 0, overdueProjects: 0 });
   const [dailyRecap, setDailyRecap] = useState({ totalCompleted: 0, totalMinutes: 0 });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -41,9 +41,16 @@ const AdminDashboard = () => {
       setStats({
         users: users.length,
         projects: projects.length,
-        tasks: summary.data.totalCompleted
+        tasks: summary.data.totalTasks,
+        pending: summary.data.totalPending,
+        totalTasks: summary.data.totalTasks,
+        highPriorityCount: summary.data.highPriorityCount,
+        overdueProjects: summary.data.overdueProjects
       });
-      setDailyRecap(summary.data);
+      setDailyRecap({
+        totalCompletedToday: summary.data.totalCompletedToday,
+        totalMinutes: summary.data.totalMinutes
+      });
     } catch (error) {
       console.error('Error fetching admin stats:', error);
     } finally {
@@ -87,14 +94,27 @@ const AdminDashboard = () => {
             </TouchableOpacity>
           </View>
 
+          {stats.overdueProjects > 0 && (
+            <TouchableOpacity 
+              style={styles.overdueBanner}
+              onPress={() => navigation.navigate('ManageProjects')}
+            >
+              <Text style={styles.overdueText}>⚠️ {stats.overdueProjects} Projects are Overdue!</Text>
+            </TouchableOpacity>
+          )}
+
           <View style={styles.statsGrid}>
-            <Card style={styles.statCard}>
+            <Card style={[styles.statCard, { width: '31%' }]}>
               <Text style={styles.statNumber}>{stats.users}</Text>
-              <Text style={styles.statLabel}>Total Users</Text>
+              <Text style={styles.statLabel}>Users</Text>
             </Card>
-            <Card style={styles.statCard}>
-              <Text style={styles.statNumber}>{stats.projects}</Text>
-              <Text style={styles.statLabel}>Projects</Text>
+            <Card style={[styles.statCard, { width: '31%' }]}>
+              <Text style={[styles.statNumber, { color: '#F59E0B' }]}>{stats.pending}</Text>
+              <Text style={styles.statLabel}>Pending</Text>
+            </Card>
+            <Card style={[styles.statCard, { width: '31%' }]}>
+              <Text style={[styles.statNumber, { color: '#EF4444' }]}>{stats.highPriorityCount || 0}</Text>
+              <Text style={styles.statLabel}>Urgent</Text>
             </Card>
           </View>
 
@@ -143,7 +163,7 @@ const AdminDashboard = () => {
           <Card style={styles.recapCard}>
             <View style={styles.recapRow}>
               <View style={styles.recapItem}>
-                <Text style={styles.recapVal}>{dailyRecap.totalCompleted}</Text>
+                <Text style={styles.recapVal}>{dailyRecap.totalCompletedToday}</Text>
                 <Text style={styles.recapLab}>Tasks Done</Text>
               </View>
               <View style={styles.recapDivider} />
@@ -173,7 +193,7 @@ const AdminDashboard = () => {
                   stroke="#6366F1"
                   strokeWidth="10"
                   fill="transparent"
-                  strokeDasharray={`${(stats.tasks / (stats.tasks + 5 || 1)) * 251} 251`}
+                  strokeDasharray={`${((stats.totalTasks - stats.pending) / (stats.totalTasks || 1)) * 251} 251`}
                   strokeLinecap="round"
                 />
                 <SvgText
@@ -184,7 +204,7 @@ const AdminDashboard = () => {
                   fontWeight="bold"
                   fill="#1E293B"
                 >
-                  {Math.round((stats.tasks / (stats.tasks + 5 || 1)) * 100)}%
+                  {Math.round(((stats.totalTasks - stats.pending) / (stats.totalTasks || 1)) * 100)}%
                 </SvgText>
               </Svg>
               <View style={styles.chartLegend}>
@@ -359,6 +379,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
+  overdueBanner: {
+    backgroundColor: '#FEF2F2',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    alignItems: 'center'
+  },
+  overdueText: {
+    color: '#B91C1C',
+    fontWeight: '700',
+    fontSize: 14
+  }
 });
 
 export default AdminDashboard;

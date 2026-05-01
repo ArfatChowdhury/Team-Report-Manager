@@ -69,7 +69,10 @@ const ManageProjects = () => {
 
   const renderProjectItem = ({ item }: { item: any }) => (
     <Card style={styles.projectCard}>
-      <View style={styles.projectInfo}>
+      <TouchableOpacity 
+        style={styles.projectInfo}
+        onPress={() => navigation.navigate('ProjectTasks', { project: item })}
+      >
         <Text style={styles.projectTitle}>{item.title}</Text>
         <Text style={styles.projectLeader}>
           Leader: <Text style={styles.leaderName}>{item.leader?.name || 'Unassigned'}</Text>
@@ -79,7 +82,7 @@ const ManageProjects = () => {
             Deadline: {new Date(item.deadline).toLocaleDateString()}
           </Text>
         )}
-      </View>
+      </TouchableOpacity>
       <View style={styles.actions}>
         <TouchableOpacity 
           onPress={() => navigation.navigate('EditProject', { project: item })}

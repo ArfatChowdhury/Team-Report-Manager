@@ -7,7 +7,8 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  Modal
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
@@ -16,6 +17,7 @@ import Badge from '../../components/common/Badge';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import { carryOverTask } from '../../api/tasksApi';
+import { getAllUsers } from '../../api/usersApi';
 import client from '../../api/client';
 
 const TaskDetails = () => {
@@ -26,6 +28,61 @@ const TaskDetails = () => {
   const [aiLoading, setAiLoading] = useState(false);
   const [currentTask, setCurrentTask] = useState(task);
   const [statusLoading, setStatusLoading] = useState(false);
+  const [users, setUsers] = useState<any[]>([]);
+  const [assignModalVisible, setAssignModalVisible] = useState(false);
+  const [assignLoading, setAssignLoading] = useState(false);
+
+  const fetchUsers = async () => {
+    try {
+      const data = await getAllUsers();
+      setUsers(data);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
+
+  const formatTimeLeft = () => {
+    if (!currentTask.startedAt || !currentTask.allocatedMinutes) return null;
+    const started = new Date(currentTask.startedAt).getTime();
+    const allocatedMs = currentTask.allocatedMinutes * 60000;
+    const deadline = started + allocatedMs;
+    const now = new Date().getTime();
+    const diff = deadline - now;
+
+    if (diff <= 0) return 'Overdue';
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+    if (days > 0) return `${days} day ${hours} hours ${minutes} min left`;
+    return `${hours} hours ${minutes} min left`;
+  };
+
+  const [timeLeftStr, setTimeLeftStr] = useState(formatTimeLeft());
+
+  React.useEffect(() => {
+    if (currentTask.status === 'in-progress' && currentTask.allocatedMinutes) {
+      const interval = setInterval(() => {
+        setTimeLeftStr(formatTimeLeft());
+      }, 60000); // update every minute
+      return () => clearInterval(interval);
+    }
+  }, [currentTask.status, currentTask.allocatedMinutes]);
+
+  const handleAssign = async (userId: string) => {
+    try {
+      setAssignLoading(true);
+      const res = await client.patch(`/tasks/${currentTask._id}`, { assignedTo: userId });
+      setCurrentTask(res.data);
+      setAssignModalVisible(false);
+      Alert.alert('Success', 'Task assigned successfully!');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to assign task');
+    } finally {
+      setAssignLoading(false);
+    }
+  };
 
   const handleCarryOver = async () => {
     Alert.alert(
@@ -149,7 +206,14 @@ const TaskDetails = () => {
 
         <View style={styles.infoGrid}>
           <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>Assigned To</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={styles.infoLabel}>Assigned To</Text>
+              {(user?.role === 'admin' || user?.role === 'leader') && (
+                <TouchableOpacity onPress={() => { fetchUsers(); setAssignModalVisible(true); }}>
+                  <Text style={styles.assignLink}>Assign</Text>
+                </TouchableOpacity>
+              )}
+            </View>
             <Text style={styles.infoValue}>{currentTask.assignedTo?.name || 'Unassigned'}</Text>
           </View>
           <View style={styles.infoItem}>
@@ -158,10 +222,27 @@ const TaskDetails = () => {
           </View>
         </View>
 
-        {currentTask.startedAt && (
+        {(currentTask.startedAt || currentTask.allocatedMinutes > 0) && (
           <View style={styles.timeSection}>
             <Text style={styles.infoLabel}>Timeline & Tracking</Text>
-            <Text style={styles.timeValue}>Started: {new Date(currentTask.startedAt).toLocaleDateString()}</Text>
+            
+            {currentTask.allocatedMinutes > 0 && (
+              <Text style={styles.timeValue}>
+                Budget: {currentTask.allocatedMinutes >= 1440 
+                  ? `${(currentTask.allocatedMinutes / 1440).toFixed(1)} Days` 
+                  : `${Math.round(currentTask.allocatedMinutes / 60)} Hours`}
+              </Text>
+            )}
+
+            {currentTask.status === 'in-progress' && timeLeftStr && (
+              <Text style={[styles.timeTrackedValue, { color: timeLeftStr === 'Overdue' ? '#EF4444' : '#F59E0B', fontSize: 16 }]}>
+                ⏳ {timeLeftStr}
+              </Text>
+            )}
+
+            {currentTask.startedAt && (
+              <Text style={styles.timeValue}>Started: {new Date(currentTask.startedAt).toLocaleDateString()}</Text>
+            )}
             {currentTask.completedAt && (
               <Text style={styles.timeValue}>Completed: {new Date(currentTask.completedAt).toLocaleDateString()}</Text>
             )}
@@ -202,6 +283,41 @@ const TaskDetails = () => {
           />
         )}
       </ScrollView>
+
+      <Modal
+        visible={assignModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setAssignModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Assign Task To</Text>
+            {users.map((u: any) => (
+              <TouchableOpacity 
+                key={u._id} 
+                style={styles.userItem}
+                onPress={() => handleAssign(u._id)}
+              >
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <View>
+                    <Text style={styles.userName}>{u.name}</Text>
+                    <Text style={styles.userRole}>{u.role}</Text>
+                  </View>
+                  <View style={[styles.workloadBadge, u.activeTasks > 5 ? styles.highWorkload : styles.normalWorkload]}>
+                    <Text style={styles.workloadText}>{u.activeTasks || 0} tasks</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+            <Button 
+              title="Cancel" 
+              onPress={() => setAssignModalVisible(false)} 
+              style={styles.cancelBtn} 
+            />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -235,6 +351,18 @@ const styles = StyleSheet.create({
   pauseBtn: { backgroundColor: '#F59E0B' },
   doneBtn: { backgroundColor: '#10B981' },
   carryOverBtn: { marginTop: 24, backgroundColor: '#6366F1' },
+  assignLink: { color: '#6366F1', fontWeight: '700', fontSize: 13 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
+  modalContent: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 24 },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: '#1E293B', marginBottom: 20, textAlign: 'center' },
+  userItem: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  userName: { fontSize: 16, fontWeight: '600', color: '#1E293B' },
+  userRole: { fontSize: 12, color: '#64748B', textTransform: 'capitalize' },
+  workloadBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
+  highWorkload: { backgroundColor: '#FEE2E2' },
+  normalWorkload: { backgroundColor: '#F1F5F9' },
+  workloadText: { fontSize: 11, fontWeight: '700', color: '#64748B' },
+  cancelBtn: { marginTop: 20, backgroundColor: '#F1F5F9' },
 });
 
 export default TaskDetails;

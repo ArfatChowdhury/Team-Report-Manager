@@ -15,7 +15,8 @@ import Loader from '../../components/common/Loader';
 import { getLeaders } from '../../api/usersApi';
 import { createProject } from '../../api/projectsApi';
 import { suggestTasks } from '../../api/aiApi';
-import { createTask } from '../../api/tasksApi';
+import { createTask, createTasksBulk } from '../../api/tasksApi';
+import CustomDateTimePicker from '../../components/common/CustomDateTimePicker';
 
 const CreateProject = () => {
   const navigation = useNavigation();
@@ -23,6 +24,9 @@ const CreateProject = () => {
   const [leaders, setLeaders] = useState<any[]>([]);
   const [isDrafting, setIsDrafting] = useState(false);
   const [draftTasks, setDraftTasks] = useState<any[]>([]);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [date, setDate] = useState(new Date());
   
   const [formData, setFormData] = useState({
     title: '',
@@ -84,35 +88,45 @@ const CreateProject = () => {
   };
 
   const handleSaveAll = async () => {
-    if (!formData.leader && draftTasks.some(t => !t.assignedTo)) {
-        // If we haven't assigned a main project leader, we need one
-    }
-
     setLoading(true);
     try {
+      console.log('🚀 Starting project creation...');
+      
       // 1. Create the project
-      // Note: We use the first assigned leader as the main project leader if not set
       const mainLeader = formData.leader || draftTasks[0]?.assignedTo || leaders[0]?._id;
-      const project = await createProject({ ...formData, leader: mainLeader });
-      const projectId = project._id;
+      
+      // Clean up the project data
+      const projectPayload = {
+        ...formData,
+        leader: mainLeader,
+        deadline: formData.deadline || null // Convert empty string to null for DB
+      };
 
-      // 2. Create all tasks
-      for (const task of draftTasks) {
-        await createTask({
-          project: projectId,
-          title: task.title,
-          description: task.description,
-          assignedTo: task.assignedTo || mainLeader, // Fallback to project leader
-          priority: task.priority || 'medium',
-          deadline: formData.deadline // Use project deadline as default
-        });
-      }
+      const project = await createProject(projectPayload);
+      const projectId = project._id;
+      console.log('✅ Project created:', projectId);
+
+      // 2. Prepare all tasks for BULK creation
+      const tasksToCreate = draftTasks.map(task => ({
+        project: projectId,
+        title: task.title,
+        description: task.description || '',
+        assignedTo: task.assignedTo || mainLeader,
+        priority: task.priority || 'medium',
+        dueDate: formData.deadline || null, // Using the field name from model 'dueDate'
+        allocatedMinutes: task.allocatedMinutes || 0
+      }));
+
+      console.log(`📝 Sending ${tasksToCreate.length} tasks in bulk...`);
+      await createTasksBulk(tasksToCreate);
 
       Alert.alert('Success', `Project created with ${draftTasks.length} AI tasks!`, [
         { text: 'OK', onPress: () => navigation.goBack() }
       ]);
     } catch (error: any) {
-      Alert.alert('Error', 'Failed to save project and tasks');
+      console.error('❌ Save Error Details:', error.response?.data || error.message);
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to save project and tasks';
+      Alert.alert('Error', errorMsg);
     } finally {
       setLoading(false);
     }
@@ -128,6 +142,24 @@ const CreateProject = () => {
     setDraftTasks(draftTasks.filter((_, i) => i !== index));
   };
 
+  const handleSuggestTasks = async () => {
+    if (!formData.title || !formData.description) {
+      Alert.alert('Error', 'Please enter project title and description');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const tasks = await suggestTasks(formData.title, formData.description, formData.deadline);
+      setDraftTasks(tasks);
+      setIsDrafting(true);
+    } catch (error) {
+      Alert.alert('AI Error', 'Failed to generate tasks');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (isDrafting) {
     return (
       <SafeAreaView style={styles.container}>
@@ -141,7 +173,16 @@ const CreateProject = () => {
           {draftTasks.map((task, index) => (
             <View key={index} style={styles.taskCard}>
               <View style={styles.taskHeader}>
-                <Text style={styles.draftLabel}>Task #{index + 1}</Text>
+                <View>
+                  <Text style={styles.draftLabel}>Task #{index + 1}</Text>
+                  {task.allocatedMinutes > 0 && (
+                    <Text style={{ fontSize: 10, color: '#F59E0B', fontWeight: 'bold', marginTop: 2 }}>
+                      ⏱️ {task.allocatedMinutes >= 1440 
+                        ? `${(task.allocatedMinutes / 1440).toFixed(1)} Days` 
+                        : `${Math.round(task.allocatedMinutes / 60)} Hours`}
+                    </Text>
+                  )}
+                </View>
                 <TouchableOpacity onPress={() => removeDraftTask(index)}>
                   <Text style={styles.deleteBtn}>Remove</Text>
                 </TouchableOpacity>
@@ -236,10 +277,25 @@ const CreateProject = () => {
         />
 
         <Text style={styles.label}>Project Deadline</Text>
-        <Input 
-          placeholder="YYYY-MM-DD (e.g. 2026-05-01)"
-          value={formData.deadline}
-          onChangeText={(v) => setFormData({...formData, deadline: v})}
+        <TouchableOpacity 
+          style={styles.dateSelector} 
+          onPress={() => setShowDatePicker(true)}
+        >
+          <Text style={[styles.dateText, !formData.deadline && styles.datePlaceholder]}>
+            {formData.deadline || 'Select deadline date'}
+          </Text>
+        </TouchableOpacity>
+
+        <CustomDateTimePicker 
+          visible={showDatePicker}
+          onClose={() => setShowDatePicker(false)}
+          initialDate={date}
+          onConfirm={(selectedDate) => {
+            setDate(selectedDate);
+            const formatted = selectedDate.toISOString().replace('T', ' ').substring(0, 16);
+            setFormData({ ...formData, deadline: formatted });
+            setShowDatePicker(false);
+          }}
         />
 
         <View style={styles.actionSection}>
@@ -356,6 +412,18 @@ const styles = StyleSheet.create({
   cancelBtn: { marginTop: 16, alignItems: 'center' },
   cancelText: { color: '#64748B', fontSize: 14, fontWeight: '600' },
   actionSection: { marginTop: 8 },
+
+  // Date Selector Styles
+  dateSelector: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 8,
+    padding: 14,
+    marginTop: 4,
+  },
+  dateText: { fontSize: 14, color: '#1E293B' },
+  datePlaceholder: { color: '#94A3B8' },
 
   // New Draft Styles
   draftLabel: { fontSize: 12, fontWeight: '800', color: '#6366F1', textTransform: 'uppercase' },
